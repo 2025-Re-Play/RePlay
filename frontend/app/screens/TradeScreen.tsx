@@ -1,25 +1,17 @@
+// app/screens/TradeScreen.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import {
-  Search,
-  Box,
-  Plus,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
+
+import ItemDetailScreen, {
+  TradeItem,
+} from "@/app/screens/ItemDetailScreen";
 
 type TradeScreenProps = {
   onAddClick: () => void;
-};
-
-type TradeItem = {
-  id: number;
-  category: string;
-  title: string;
-  school: string;
-  tags: string[];
-  price: string;
+  onDetailModeChange?: (isDetail: boolean) => void; // ✅ 헤더 숨김 컨트롤
 };
 
 const mockItems: TradeItem[] = [
@@ -50,32 +42,42 @@ const mockItems: TradeItem[] = [
 ];
 
 const categoryOptions = ["가구", "소품", "의상"];
-const tagOptions = ["빈티지", "고풍스러운", "현대", "전통", "공포", "판타지", "시대극", "코미디"];
+const tagOptions = [
+  "빈티지",
+  "고풍스러운",
+  "현대",
+  "전통",
+  "공포",
+  "판타지",
+  "시대극",
+  "코미디",
+];
 const locationOptions = ["100m 이내", "1km 이내", "1-5km", "5-10km", "10km 이상"];
 
-export default function TradeScreen({ onAddClick }: TradeScreenProps) {
+export default function TradeScreen({
+  onAddClick,
+  onDetailModeChange,
+}: TradeScreenProps) {
   const [query, setQuery] = useState("");
 
-  // 실제 적용된 필터 상태
+  const [selectedItem, setSelectedItem] = useState<TradeItem | null>(null);
+
   const [category, setCategory] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [location, setLocation] = useState<string | null>(null);
 
-  // 바텀시트 안에서만 쓰는 임시 상태
   const [draftCategory, setDraftCategory] = useState<string | null>(null);
   const [draftTags, setDraftTags] = useState<string[]>([]);
 
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showLocationMenu, setShowLocationMenu] = useState(false);
 
-  // 데모용: 검색어 있으면 결과가 있다고 가정
   const hasResult = query.trim().length > 0;
 
   const isFilterActive = !!category || tags.length > 0;
   const isLocationActive = !!location;
 
   const handleFilterClick = () => {
-    // 현재 적용된 값으로 임시 상태 초기화
     setDraftCategory(category);
     setDraftTags(tags);
     setShowFilterSheet(true);
@@ -104,14 +106,31 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
     setShowLocationMenu(false);
   };
 
+  // ✅ 상세 페이지 여부를 HomeScreen에 알려줌
+  useEffect(() => {
+    if (onDetailModeChange) {
+      onDetailModeChange(selectedItem !== null);
+    }
+  }, [selectedItem, onDetailModeChange]);
+
+  // ✅ 상세 페이지 모드
+  if (selectedItem) {
+    return (
+      <ItemDetailScreen
+        item={selectedItem}
+        onBack={() => setSelectedItem(null)}
+      />
+    );
+  }
+
   return (
     <div className="relative flex h-full flex-col bg-white">
       {/* 상단 검색/필터 영역 */}
       <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-4 pt-4">
-        {/* 검색 + 카메라 */}
         <div className="space-y-3">
+          {/* 검색 + 카메라 */}
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-3xl bg-white border border-[#F7F7F7] px-6 py-3 text-xs text-slate-500 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-1 items-center gap-2 rounded-3xl border border-[#F7F7F7] bg-white px-6 py-3 text-xs text-slate-500 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
               <Image src="/icons/search.svg" alt="검색" width={24} height={24} />
               <input
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-300"
@@ -121,17 +140,19 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
               />
             </div>
 
-            <button
-              className="flex h-[48px] w-[48px] items-center justify-center rounded-2xl
-                         bg-gradient-to-r from-white to-[#D9FFEE] mr-4"
-            >
-              <Image src="/icons/camera.svg" alt="카메라" width={22} height={20} />
+            <button className="mr-4 flex h-[48px] w-[48px] items-center justify-center rounded-2xl bg-gradient-to-r from-white to-[#D9FFEE]">
+              <Image
+                src="/icons/camera.svg"
+                alt="카메라"
+                width={22}
+                height={20}
+              />
             </button>
           </div>
 
-          {/* 필터 / 위치 버튼 줄 */}
+          {/* 필터 / 위치 칩 */}
           <div className="flex items-center gap-2 px-4">
-            {/* 필터 칩 */}
+            {/* 필터 */}
             <button
               type="button"
               onClick={handleFilterClick}
@@ -155,8 +176,7 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
               <span>필터</span>
             </button>
 
-
-            {/* 위치 칩 + 드롭다운 */}
+            {/* 위치 */}
             <div className="relative">
               <button
                 type="button"
@@ -181,7 +201,6 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
                 <span>{location ?? "위치"}</span>
               </button>
 
-              {/* 위치 드롭다운 */}
               {showLocationMenu && (
                 <div className="absolute left-0 top-11 z-20 w-36 rounded-2xl bg-white px-4 py-3 text-sm text-slate-700 shadow-[0_10px_30px_rgba(15,23,42,0.17)]">
                   <div className="space-y-2">
@@ -205,7 +224,11 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
         {hasResult ? (
           <div className="mt-4 space-y-2 pb-20">
             {mockItems.map((item) => (
-              <TradeListItem key={item.id} item={item} />
+              <TradeListItem
+                key={item.id}
+                item={item}
+                onClick={() => setSelectedItem(item)}
+              />
             ))}
           </div>
         ) : (
@@ -216,6 +239,14 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
           </div>
         )}
       </div>
+
+      {/* 플로팅 + 버튼 (물품 등록) */}
+      <button
+        onClick={onAddClick}
+        className="fixed bottom-20 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0EBC81] text-white shadow-lg"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       {/* 필터 바텀시트 */}
       {showFilterSheet && (
@@ -240,9 +271,7 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
                       <button
                         key={label}
                         onClick={() =>
-                          setDraftCategory(
-                            selected ? null : label
-                          )
+                          setDraftCategory(selected ? null : label)
                         }
                         className={`rounded-full px-4 py-2 text-sm ${
                           selected
@@ -282,7 +311,7 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
             </div>
 
             <button
-              className="mt-8 w-full rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
+              className="mt-8 w-full rounded-full bg-[#0EBC81] py-3 text-sm font-semibold text-white"
               onClick={handleFilterApply}
             >
               필터 적용하기
@@ -294,19 +323,22 @@ export default function TradeScreen({ onAddClick }: TradeScreenProps) {
   );
 }
 
-/* ----------------- 리스트 아이템 컴포넌트 ----------------- */
+/* ----------------- 리스트 아이템 ----------------- */
 
 type TradeListItemProps = {
   item: TradeItem;
+  onClick: () => void;
 };
 
-function TradeListItem({ item }: TradeListItemProps) {
+function TradeListItem({ item, onClick }: TradeListItemProps) {
   return (
-    <div className="flex items-center gap-3 border-b border-slate-100 bg-white px-3 py-3">
-      {/* 썸네일 */}
-      <div className="h-[96px] w-[96px] flex-shrink-0 rounded-[10px] mt-[-36px] bg-[#B2B2B2]" />
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 border-b border-slate-100 bg-white px-3 py-3 text-left"
+    >
+      <div className="mt-[-36px] h-[96px] w-[96px] flex-shrink-0 rounded-[10px] bg-[#B2B2B2]" />
 
-      {/* 정보 */}
       <div className="flex flex-1 flex-col px-2">
         <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
           {item.category}
@@ -326,6 +358,6 @@ function TradeListItem({ item }: TradeListItemProps) {
       </div>
 
       <ChevronRight className="h-4 w-4 text-[#B5BBC1]" />
-    </div>
+    </button>
   );
 }

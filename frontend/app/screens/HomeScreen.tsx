@@ -49,13 +49,10 @@ export default function HomeScreen() {
       {/* 상단 헤더 */}
       <AppHeader
         title={headerTitle}
-        showLogo={
-          activeTab === "home" &&
-          !showItemForm &&
-          !showPostForm &&
-          !showCalendar
-        }
+        // 홈/거래/기타 상관 없이, 폼/캘린더 아닐 때는 항상 로고 버전 사용
+        showLogo={!showItemForm && !showPostForm && !showCalendar}
       />
+
 
       {/* 가운데 영역 */}
       <main className="flex-1 overflow-hidden bg-slate-50">
@@ -104,7 +101,7 @@ function HomeTab() {
   return (
     <div className="no-scrollbar h-full space-y-6 overflow-y-auto px-4 pb-6 pt-2">
       {/* 상단 큰 카드 (연한 초록) */}
-      <section className="mt-2 rounded-3xl bg-gradient-to-b from-[#DEF8EC] from-80% to-[#FDFDFD] px-5 py-6">
+      <section className="mt-2 rounded-3xl bg-gradient-to-r from-[#DEF8EC] from-99% to-[#FDFDFD] px-5 py-6">
         <p className="text-[20px] font-bold text-[#1A1A1A]">
           대학 공연의 모든 것
         </p>

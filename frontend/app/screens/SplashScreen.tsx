@@ -1,4 +1,3 @@
-// app/screens/SplashScreen.tsx
 "use client";
 
 import Image from "next/image";
@@ -17,17 +16,18 @@ export default function SplashScreen({ onSkip }: SplashProps) {
         <Image
           src="/replay-logo.svg"
           alt="리플레이 로고"
-          width={220}
-          height={220}
+          width={86}
+          height={99}
         />
 
-        <p className="mt-10 text-sm text-emerald-800">
-          대학 연극·영화 동아리 소품 순환 플랫폼
+        {/* 한 줄짜리 슬로건 + 색/크기 사진1처럼 */}
+        <p className="mt-12 text-xl text-[#004D2F]">
+          연극·영화 소품 플랫폼
         </p>
-        <p className="mt-3 text-2xl font-bold text-slate-900">리플레이</p>
 
-        <p className="mt-6 text-[11px] text-slate-400">
-          화면을 탭하면 시작합니다
+        {/* 서비스 이름 크게 */}
+        <p className="mt-2.5 text-2xl font-bold text-[#004D2F]">
+          리플레이
         </p>
       </div>
     </div>

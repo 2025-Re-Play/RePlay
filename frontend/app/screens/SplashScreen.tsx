@@ -14,7 +14,7 @@ export default function SplashScreen({ onSkip }: SplashProps) {
     >
       <div className="flex flex-col items-center">
         <Image
-          src="/replay-logo.svg"
+          src="/icons/replay-logo.svg"
           alt="리플레이 로고"
           width={86}
           height={99}

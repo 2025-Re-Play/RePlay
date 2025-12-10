@@ -1,40 +1,20 @@
+// app/screens/HomeScreen.tsx
 "use client";
 
-import {
-  Search,
-  Camera,
-  ShoppingBag,
-  Users,
-  User,
-  MonitorPlay,
-  Sparkles,
-  Package,
-} from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Image from "next/image";
+
 import BottomNav, { BottomTabKey } from "@/app/components/BottomNav";
+import AppHeader from "@/app/components/AppHeader";
+
 import TradeScreen from "@/app/screens/TradeScreen";
 import ItemNewScreen from "@/app/screens/ItemNewScreen";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import ManageScreen from "@/app/screens/ManageScreen";
 import CommunityScreen from "@/app/screens/CommunityScreen";
 import CommunityWriteScreen from "@/app/screens/CommunityWriteScreen";
-import { ChevronLeft } from "lucide-react";
 import MyPageScreen from "@/app/screens/MyPageScreen";
 import PerformanceCalendarScreen from "@/app/screens/PerformanceCalendarScreen";
-
-const popularTags = [
-  "#반디지",
-  "#학교",
-  "#공연소품",
-  "#현대",
-  "#전통",
-  "#로맨틱",
-  "#공감",
-  "#단편",
-  "#시대극",
-  "#코미디",
-];
 
 export default function HomeScreen() {
   const searchParams = useSearchParams();
@@ -42,8 +22,8 @@ export default function HomeScreen() {
 
   const [activeTab, setActiveTab] = useState<BottomTabKey>(initialTab);
   const [showItemForm, setShowItemForm] = useState(false);
-  const [showPostForm, setShowPostForm] = useState(false); // 추가
-  const [showCalendar, setShowCalendar] = useState(false); // ✅ 공연 캘린더
+  const [showPostForm, setShowPostForm] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const handleTabChange = (tab: BottomTabKey) => {
     setActiveTab(tab);
@@ -52,78 +32,36 @@ export default function HomeScreen() {
     setShowCalendar(false);
   };
 
+  // 홈이 아닐 때 상단에 표시할 타이틀
+  const headerTitle =
+    activeTab === "trade"
+      ? "거래"
+      : activeTab === "manage"
+      ? "물품관리"
+      : activeTab === "community"
+      ? "커뮤니티"
+      : activeTab === "mypage"
+      ? "마이페이지"
+      : undefined;
+
   return (
     <div className="flex h-full w-full flex-col bg-slate-50">
       {/* 상단 헤더 */}
-      <header className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4">
-        {showPostForm ? (
-          // 글쓰기 모드
-          <>
-            <button
-              type="button"
-              onClick={() => setShowPostForm(false)}
-              className="flex items-center text-slate-500"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-sm font-semibold text-slate-900">글쓰기</span>
-            <button
-              type="button"
-              className="text-xs font-semibold text-emerald-500"
-            >
-              등록
-            </button>
-          </>
-        ) : showCalendar ? (
-          // ✅ 공연 캘린더 헤더
-          <>
-            <button
-              type="button"
-              onClick={() => setShowCalendar(false)}
-              className="flex items-center text-slate-500"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-sm font-semibold text-slate-900">
-              공연 캘린더
-            </span>
-            <div className="w-4" />
-          </>
-        ) : (
-          // 기본 헤더
-          <>
-            <span className="text-sm font-semibold text-slate-900">
-              {showItemForm
-                ? "물품 등록"
-                : activeTab === "trade"
-                ? "거래"
-                : activeTab === "manage"
-                ? "물품관리"
-                : activeTab === "community"
-                ? "커뮤니티"
-                : activeTab === "mypage"
-                ? "마이페이지"
-                : "리플레이"}
-            </span>
+      <AppHeader
+        title={headerTitle}
+        showLogo={
+          activeTab === "home" &&
+          !showItemForm &&
+          !showPostForm &&
+          !showCalendar
+        }
+      />
 
-            <Link
-              href="/login"
-              className="flex items-center gap-1 text-xs text-emerald-600"
-            >
-              <span>로그인</span>
-              <User className="h-4 w-4" />
-            </Link>
-          </>
-        )}
-      </header>
-
-
-
-      {/* 가운데 영역만 스크롤 가능하게 */}
-      <main className="flex-1 bg-slate-50 overflow-hidden">
+      {/* 가운데 영역 */}
+      <main className="flex-1 overflow-hidden bg-slate-50">
         {showItemForm ? (
           <ItemNewScreen onBack={() => setShowItemForm(false)} />
-        ) :  showPostForm ? (
+        ) : showPostForm ? (
           <CommunityWriteScreen onBack={() => setShowPostForm(false)} />
         ) : showCalendar ? (
           <PerformanceCalendarScreen />
@@ -140,9 +78,9 @@ export default function HomeScreen() {
             )}
 
             {activeTab === "community" && (
-              <CommunityScreen 
-              onAddClick={() => setShowPostForm(true)}
-              onCalendarClick={() => setShowCalendar(true)}   // ✅ 추가
+              <CommunityScreen
+                onAddClick={() => setShowPostForm(true)}
+                onCalendarClick={() => setShowCalendar(true)}
               />
             )}
 
@@ -160,134 +98,117 @@ export default function HomeScreen() {
   );
 }
 
-/* ----------------- 홈 탭 내용 ----------------- */
+/* ----------------- 홈 탭 (사진1 레이아웃) ----------------- */
 
 function HomeTab() {
   return (
-    // 이 부분만 스크롤
-    <div className="no-scrollbar h-full space-y-4 overflow-y-auto px-4 py-4">
-      {/* 히어로 카드 */}
-      <section className="relative rounded-3xl bg-emerald-50 px-5 py-4">
-        <div className="pointer-events-none absolute right-4 top-2 opacity-20">
-          <Sparkles className="h-20 w-20 text-emerald-400" />
-        </div>
+    <div className="no-scrollbar h-full space-y-6 overflow-y-auto px-4 pb-6 pt-2">
+      {/* 상단 큰 카드 (연한 초록) */}
+      <section className="mt-2 rounded-3xl bg-gradient-to-b from-[#DEF8EC] from-80% to-[#FDFDFD] px-5 py-6">
+        <p className="text-[20px] font-bold text-[#1A1A1A]">
+          대학 공연의 모든 것
+        </p>
+        <p className="mt-2 text-[14px] text-[#9E9E9E]">
+          원하는 소품, 의상, 가구를 손쉽게 거래하세요
+        </p>
 
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold text-emerald-600">
-            대학 공연의 모든 것
-          </p>
-          <h1 className="text-base font-semibold text-slate-900">
-            소품, 의상, 가구를
-            <br />
-            손쉽게 거래해요
-          </h1>
-          <p className="mt-1 text-[11px] text-emerald-700/80">
-            공연 준비에 필요한 모든 것을 한 번에.
-          </p>
-        </div>
-
+        {/* 검색창 + 카메라 버튼 */}
         <div className="mt-4 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs text-slate-500 shadow-sm">
-            <Search className="h-4 w-4 text-emerald-500" />
+          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[14px] text-slate-500 shadow-sm">
+            {/* 검색 아이콘 (svg) */}
+            <Image src="/icons/search.svg" alt="검색" width={24} height={24} />
             <input
-              className="w-full bg-transparent outline-none"
+              className="w-full h-10 bg-transparent text-[14px] text-[#D1D6DB] outline-none"
               placeholder="어떤 소품을 찾으시나요?"
             />
           </div>
-          <button className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white text-emerald-500 shadow-sm">
-            <Camera className="h-4 w-4" />
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-[20px]
+                        bg-gradient-to-r from-white to-[#D9FFEE]"
+            >            
+            <Image
+              src="/icons/camera.svg"
+              alt="카메라"
+              width={18}
+              height={18}
+            />
           </button>
         </div>
       </section>
 
-      {/* 메인 메뉴 아이콘 4개 */}
-      <section className="grid grid-cols-4 gap-2">
-        <MenuButton icon={<ShoppingBag className="h-5 w-5" />} label="거래" />
-        <MenuButton icon={<Package className="h-5 w-5" />} label="물품관리" />
-        <MenuButton icon={<Users className="h-5 w-5" />} label="커뮤니티" />
-        <MenuButton
-          icon={<MonitorPlay className="h-5 w-5" />}
-          label="공연일정"
-        />
+      {/* 두 번째 카드: “우리 동방에 뭐가 남았지?” */}
+      <section className="rounded-[20px] bg-white px-5 py-6 shadow-sm">
+        <p className="text-center text-[16px] font-semibold text-[#4F4F4F]">
+          우리 동방에 뭐가 남았지?
+        </p>
+        <p className="mt-2 text-center text-=[14px] text-[#9E9E9E]">
+          사용하지 않는 물품을 다른 연극부와 공유해요
+        </p>
+        <button className="block mx-auto mt-4 w-[124px] rounded-[12px] bg-[#0EBC81] py-2 text-[14px] text-white">
+          물품 등록하기
+        </button>
       </section>
 
-      {/* 인기 태그 */}
-      <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-slate-900">인기 태그</h2>
-        <div className="flex flex-wrap gap-2">
-          {popularTags.map((tag) => (
-            <button
-              key={tag}
-              className="rounded-full bg-white px-3 py-1 text-[11px] text-slate-700 shadow-sm"
-            >
-              {tag}
-            </button>
-          ))}
+      {/* 최근 등록 물품 */}
+      <section className="space-y-3">
+        <SectionHeaderWithArrow title="최근 등록 물품" />
+        {/* 가로 스크롤 카드 리스트 */}
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {/* 나중에 실제 데이터로 map 돌리면 됨 */}
+          <ItemCard />
+          <ItemCard />
+          <ItemCard />
         </div>
       </section>
 
-      <SectionHeader title="최근 등록 물품" />
-      <EmptyListCard text="아직 등록된 물품이 없어요." />
-
-      <SectionHeader title="다가오는 공연" />
-      <EmptyListCard text="등록된 공연 일정이 없어요." />
-
-      <section className="mt-2 rounded-2xl bg-white px-5 py-4 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900">
-          내 물품도 등록해보세요
+      {/* 다가오는 공연 */}
+      <section className="space-y-3">
+        <SectionHeaderWithArrow title="다가오는 공연" />
+        {/* 공연 리스트 자리 */}
+        <p className="text-[11px] text-slate-500">
+          등록된 공연 일정이 없어요.
         </p>
-        <p className="mt-1 text-[11px] text-slate-500">
-          사용하지 않는 소품을 다른 연극부와 나눠요.
-        </p>
-        <button className="mt-3 w-full rounded-full bg-emerald-500 py-2 text-xs font-semibold text-white">
-          로그인하고 시작하기
-        </button>
       </section>
     </div>
   );
 }
 
-/* ----------------- 공통 작은 컴포넌트들 ----------------- */
+/* ----------------- 홈 탭용 작은 컴포넌트들 ----------------- */
 
-type MenuButtonProps = {
-  icon: React.ReactNode;
-  label: string;
-};
-
-function MenuButton({ icon, label }: MenuButtonProps) {
-  return (
-    <button className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-white py-3 text-[11px] text-slate-700 shadow-sm">
-      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
-        {icon}
-      </div>
-      <span>{label}</span>
-    </button>
-  );
-}
-
-type SectionHeaderProps = {
+type SectionHeaderWithArrowProps = {
   title: string;
 };
 
-function SectionHeader({ title }: SectionHeaderProps) {
+function SectionHeaderWithArrow({ title }: SectionHeaderWithArrowProps) {
   return (
-    <div className="mt-2 flex items-center justify-between">
-      <h2 className="text-xs font-semibold text-slate-900">{title}</h2>
-      <button className="text-[11px] font-medium text-emerald-600">
-        더보기
+    <div className="flex items-center justify-between">
+      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      <button type="button">
+        <Image
+          src="/icons/arrow-right.svg"
+          alt="더보기"
+          width={20}
+          height={20}
+        />
       </button>
     </div>
   );
 }
 
-type EmptyListCardProps = {
-  text: string;
-};
-
-function EmptyListCard({ text }: EmptyListCardProps) {
+function ItemCard() {
   return (
-    <div className="mt-2 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-[11px] text-slate-500">
-      {text}
+    <div className="flex min-w-[200px] items-center rounded-[12px] bg-white p-3 shadow-sm">
+      {/* 썸네일 박스 */}
+      <div className="h-16 w-16 rounded-xl bg-slate-200" />
+
+      {/* 오른쪽 텍스트 영역 */}
+      <div className="ml-3 flex flex-col gap-1">
+        <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] text-bold text-[#0EBC81]">
+          가구
+        </span>
+        <span className="text-[16px] text-[#4F4F4F]">물품명</span>
+      </div>
     </div>
   );
 }
+

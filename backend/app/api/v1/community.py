@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-router = APIRRouter(
+router = APIRouter(
     prefix="/community",
     tags=["커뮤니티"],
 )

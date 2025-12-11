@@ -24,7 +24,6 @@ export default function HomeScreen() {
   const [showPostForm, setShowPostForm] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
-  // ✅ 헤더 숨김 여부 (상세 페이지일 때 true)
   const [headerHidden, setHeaderHidden] = useState(false);
 
   const handleTabChange = (tab: BottomTabKey) => {
@@ -85,7 +84,8 @@ export default function HomeScreen() {
               />
             )}
 
-            {activeTab === "mypage" && <MyPageScreen />}
+            {activeTab === "mypage" && (  <MyPageScreen onDetailModeChange={setHeaderHidden} />
+            )}
           </>
         )}
       </main>

@@ -1,4 +1,3 @@
-// app/screens/HomeScreen.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,14 +24,17 @@ export default function HomeScreen() {
   const [showPostForm, setShowPostForm] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // ✅ 헤더 숨김 여부 (상세 페이지일 때 true)
+  const [headerHidden, setHeaderHidden] = useState(false);
+
   const handleTabChange = (tab: BottomTabKey) => {
     setActiveTab(tab);
     setShowItemForm(false);
     setShowPostForm(false);
     setShowCalendar(false);
+    setHeaderHidden(false);
   };
 
-  // 홈이 아닐 때 상단에 표시할 타이틀
   const headerTitle =
     activeTab === "trade"
       ? "거래"
@@ -49,12 +51,8 @@ export default function HomeScreen() {
       {/* 상단 헤더 */}
       <AppHeader
         title={headerTitle}
-        showLogo={
-          activeTab === "home" &&
-          !showItemForm &&
-          !showPostForm &&
-          !showCalendar
-        }
+        showLogo={!showItemForm && !showPostForm && !showCalendar}
+        hidden={headerHidden}
       />
 
       {/* 가운데 영역 */}
@@ -70,7 +68,10 @@ export default function HomeScreen() {
             {activeTab === "home" && <HomeTab />}
 
             {activeTab === "trade" && (
-              <TradeScreen onAddClick={() => setShowItemForm(true)} />
+              <TradeScreen
+                onAddClick={() => setShowItemForm(true)}
+                onDetailModeChange={setHeaderHidden} // ✅ 상세 모드일 때 헤더 숨김
+              />
             )}
 
             {activeTab === "manage" && (
@@ -98,13 +99,16 @@ export default function HomeScreen() {
   );
 }
 
-/* ----------------- 홈 탭 (사진1 레이아웃) ----------------- */
+/* ----------------- 홈 탭 (메인 홈 화면) ----------------- */
 
 function HomeTab() {
   return (
     <div className="no-scrollbar h-full space-y-6 overflow-y-auto px-4 pb-6 pt-2">
-      {/* 상단 큰 카드 (연한 초록) */}
-      <section className="mt-2 rounded-3xl bg-gradient-to-b from-[#DEF8EC] from-80% to-[#FDFDFD] px-5 py-6">
+      {/* 상단 큰 카드 */}
+      <section
+        className="mt-2 rounded-3xl px-5 py-6
+        bg-[linear-gradient(90deg,#DEF8EC_0%,#DEF8EC_98%,#FDFDFD_100%)]"
+      >
         <p className="text-[20px] font-bold text-[#1A1A1A]">
           대학 공연의 모든 것
         </p>
@@ -115,36 +119,30 @@ function HomeTab() {
         {/* 검색창 + 카메라 버튼 */}
         <div className="mt-4 flex items-center gap-2">
           <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[14px] text-slate-500 shadow-sm">
-            {/* 검색 아이콘 (svg) */}
             <Image src="/icons/search.svg" alt="검색" width={24} height={24} />
             <input
-              className="w-full h-10 bg-transparent text-[14px] text-[#D1D6DB] outline-none"
+              className="h-9 w-full bg-transparent text-[14px] text-[#D1D6DB] outline-none"
               placeholder="어떤 소품을 찾으시나요?"
             />
           </div>
-            <button
-              className="flex h-10 w-10 items-center justify-center rounded-[20px]
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-[20px]
                         bg-gradient-to-r from-white to-[#D9FFEE]"
-            >            
-            <Image
-              src="/icons/camera.svg"
-              alt="카메라"
-              width={18}
-              height={18}
-            />
+          >
+            <Image src="/icons/camera.svg" alt="카메라" width={18} height={18} />
           </button>
         </div>
       </section>
 
-      {/* 두 번째 카드: “우리 동방에 뭐가 남았지?” */}
+      {/* 두 번째 카드 */}
       <section className="rounded-[20px] bg-white px-5 py-6 shadow-sm">
         <p className="text-center text-[16px] font-semibold text-[#4F4F4F]">
           우리 동방에 뭐가 남았지?
         </p>
-        <p className="mt-2 text-center text-=[14px] text-[#9E9E9E]">
+        <p className="mt-2 text-center text-[14px] text-[#9E9E9E]">
           사용하지 않는 물품을 다른 연극부와 공유해요
         </p>
-        <button className="block mx-auto mt-4 w-[124px] rounded-[12px] bg-[#0EBC81] py-2 text-[14px] text-white">
+        <button className="mx-auto mt-4 block w-[124px] rounded-[12px] bg-[#0EBC81] py-2 text-[14px] text-white">
           물품 등록하기
         </button>
       </section>
@@ -152,9 +150,7 @@ function HomeTab() {
       {/* 최근 등록 물품 */}
       <section className="space-y-3">
         <SectionHeaderWithArrow title="최근 등록 물품" />
-        {/* 가로 스크롤 카드 리스트 */}
-        <div className="flex gap-3 overflow-x-auto pb-1">
-          {/* 나중에 실제 데이터로 map 돌리면 됨 */}
+        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
           <ItemCard />
           <ItemCard />
           <ItemCard />
@@ -164,7 +160,6 @@ function HomeTab() {
       {/* 다가오는 공연 */}
       <section className="space-y-3">
         <SectionHeaderWithArrow title="다가오는 공연" />
-        {/* 공연 리스트 자리 */}
         <p className="text-[11px] text-slate-500">
           등록된 공연 일정이 없어요.
         </p>
@@ -184,12 +179,7 @@ function SectionHeaderWithArrow({ title }: SectionHeaderWithArrowProps) {
     <div className="flex items-center justify-between">
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       <button type="button">
-        <Image
-          src="/icons/arrow-right.svg"
-          alt="더보기"
-          width={20}
-          height={20}
-        />
+        <Image src="/icons/arrow-right.svg" alt="더보기" width={20} height={20} />
       </button>
     </div>
   );
@@ -198,12 +188,9 @@ function SectionHeaderWithArrow({ title }: SectionHeaderWithArrowProps) {
 function ItemCard() {
   return (
     <div className="flex min-w-[200px] items-center rounded-[12px] bg-white p-3 shadow-sm">
-      {/* 썸네일 박스 */}
       <div className="h-16 w-16 rounded-xl bg-slate-200" />
-
-      {/* 오른쪽 텍스트 영역 */}
       <div className="ml-3 flex flex-col gap-1">
-        <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] text-bold text-[#0EBC81]">
+        <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
           가구
         </span>
         <span className="text-[16px] text-[#4F4F4F]">물품명</span>
@@ -211,4 +198,3 @@ function ItemCard() {
     </div>
   );
 }
-

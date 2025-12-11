@@ -328,13 +328,13 @@ export default function ManageScreen({
       <button
         type="button"
         onClick={onAddClick}
-        className="fixed bottom-20 right-6 h-12 w-12"
+        className="fixed bottom-20 right-6"
       >
         <Image
-          src="/icons/fab-plus.svg" // 네가 준비할 이미지 경로
+          src="/icons/plus.svg"
           alt="물품 추가"
-          width={48}
-          height={48}
+          width={64}
+          height={64}
         />
       </button>
 

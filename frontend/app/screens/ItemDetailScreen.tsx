@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import Image from "next/image";
 
 export type TradeItem = {
   id: number;
@@ -104,7 +105,7 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <span className="text-base font-semibold text-slate-900">물건명</span>
+        <span className="text-[14px]">물건명</span>
         <div className="w-8" />
       </header>
 
@@ -127,15 +128,15 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
             가구
           </span>
 
-          <h1 className="mt-3 text-xl font-bold text-slate-900">상품명</h1>
+          <h1 className="mt-3 text-[22px] text-[#1A1A1A]">상품명</h1>
 
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[#A7A7A7]">
             연세대학교 · 26.03.31
           </p>
 
-          <p className="mt-1 text-sm text-slate-400">태그 · 태그 · 태그</p>
+          <p className="mt-1 text-[14px] text-[#A7A7A7]">태그 · 태그 · 태그</p>
 
-          <p className="mt-6 text-sm leading-relaxed text-slate-800">
+          <p className="mt-6 text-[16px] leading-relaxed text-[#1A1A1A]">
             상품 설명 글 상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품
             설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글
             상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글
@@ -146,21 +147,21 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
       {/* 하단 가격 + 버튼 영역 */}
       <div className="fixed bottom-16 left-0 right-0 border-t border-slate-100 bg-white px-6 pb-4 pt-3">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-lg font-semibold text-slate-900">
+          <span className="ml-auto text-lg font-semibold text-slate-900">
             331,331원
           </span>
         </div>
 
         {progress === "none" ? (
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
-              className="flex-1 rounded-2xl bg-[#2F7BF6] py-3 text-sm font-semibold text-white"
+              className="flex-1 rounded-[10px] bg-[#237BFF] py-3 text-[16px] text-white"
               onClick={() => setOpenMode("renting")}
             >
               대여
             </button>
             <button
-              className="flex-1 rounded-2xl bg-emerald-500 py-3 text-sm font-semibold text-white"
+              className="flex-1 rounded-[10px] bg-[#0EBC81] py-3 text-[16px] text-white"
               onClick={() => setOpenMode("trading")}
             >
               거래
@@ -168,7 +169,7 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
           </div>
         ) : (
           <button
-            className="w-full rounded-2xl bg-slate-300 py-3 text-sm font-semibold text-white"
+            className="w-full rounded-[10px] bg-[#9E9E9E] py-3 text-[16px] text-white"
             disabled
           >
             진행중
@@ -203,7 +204,7 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
             />
 
             <button
-              className="mt-6 w-full rounded-2xl bg-[#2F7BF6] py-3 text-sm font-semibold text-white"
+              className="mt-6 w-full rounded-[10px] bg-[#237BFF] py-3 text-[16px] text-white"
               onClick={handleRentConfirm}
               disabled={!rentStart || !rentEnd}
             >
@@ -240,7 +241,7 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
             />
 
             <button
-              className="mt-6 w-full rounded-2xl bg-emerald-500 py-3 text-sm font-semibold text-white"
+              className="mt-6 w-full rounded-[10px] bg-[#0EBC81] py-3 text-[16px] text-white"
               onClick={handleTradeConfirm}
               disabled={!tradeDate}
             >
@@ -257,10 +258,10 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
           onClick={closeAll}
         >
           <div className="w-full max-w-sm rounded-3xl bg-white px-8 py-8 text-center shadow-xl">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500">
-              <Check className="h-8 w-8 text-white" />
+            <div className="mx-auto flex items-center justify-center">
+              <Image src="/icons/check.svg" alt="확인" width={48} height={48} />
             </div>
-            <p className="mt-6 text-sm font-medium text-slate-900">
+            <p className="mt-2.5 text-[16px] font-medium text-[#1A1A1A]">
               대여 및 거래가 성사되면
               <br />
               알림으로 알려드릴게요

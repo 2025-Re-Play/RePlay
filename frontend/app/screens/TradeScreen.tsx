@@ -240,14 +240,6 @@ export default function TradeScreen({
         )}
       </div>
 
-      {/* 플로팅 + 버튼 (물품 등록) */}
-      <button
-        onClick={onAddClick}
-        className="fixed bottom-20 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#0EBC81] text-white shadow-lg"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
       {/* 필터 바텀시트 */}
       {showFilterSheet && (
         <div

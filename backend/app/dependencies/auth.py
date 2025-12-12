@@ -24,3 +24,11 @@ def get_current_user(
         raise AppException.not_found("사용자를 찾을 수 없습니다.")
 
     return user
+
+def require_admin(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """ADMIN 전용 접근 제한"""
+    if current_user.role != "ADMIN":
+        raise AppException.forbidden("관리자 권한이 필요합니다.")
+    return current_user

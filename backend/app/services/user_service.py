@@ -1,0 +1,40 @@
+from sqlalchemy.orm import Session
+
+from app.repositories.user_repository import UserRepository
+from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.utils.security import hash_password, verify_password, create_access_token
+from app.utils.exceptions import AppException, ValidationException, NotFoundException
+from app.models.user import User, UserRole
+
+
+class UserService:
+    def signup(self, db: Session, data: UserCreate) -> UserResponse:
+        # 이메일 중복 체크
+        existing = UserRepository.get_by_email(db, data.email)
+        if existing:
+            raise ValidationException("이미 사용 중인 이메일입니다.")
+
+        # User 모델 생성
+        new_user = User(
+            email=data.email,
+            password_hash=hash_password(data.password),
+            name=data.name,
+            role=UserRole.USER,
+            school_id=data.school_id,
+            club_id=data.club_id,
+        )
+
+        saved = UserRepository.create(db, new_user)
+        return UserResponse.from_orm(saved)
+
+    def login(self, db: Session, data: UserLogin) -> str:
+        user = UserRepository.get_by_email(db, data.email)
+        if not user:
+            raise NotFoundException("해당 이메일을 가진 사용자가 없습니다.")
+
+        if not verify_password(data.password, user.password_hash):
+            raise ValidationException("비밀번호가 일치하지 않습니다.")
+
+        # JWT 발급
+        token = create_access_token({"sub": user.id, "role": user.role.value})
+        return token

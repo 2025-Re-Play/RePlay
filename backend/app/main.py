@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine
 from app.api.v1.router import api_router
-from app.api.v1 import realtime
+from app.api.v1 import realtime, auth
 from app.database import init_test_model
 
 from app.schemas.common import fail, ok
@@ -59,6 +59,7 @@ app.add_middleware(
 # HTTP + WebSocket 라우터 등록
 app.include_router(api_router)          # /api/v1/...
 app.include_router(realtime.router)     # /ws/...
+app.include_router(auth.router, prefix="/api/v1")
 
 @app.on_event("startup")
 def on_startup():

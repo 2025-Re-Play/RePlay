@@ -324,17 +324,16 @@ export default function ManageScreen({
         </div>
       </div>
 
-      {/* 플로팅 + 버튼 (이미지로) */}
       <button
         type="button"
         onClick={onAddClick}
-        className="fixed bottom-20 right-6"
+        className="fixed bottom-23 right-4 flex items-center justify-center"
       >
         <Image
           src="/icons/plus.svg"
           alt="물품 추가"
-          width={64}
-          height={64}
+          width={72}
+          height={72}
         />
       </button>
 

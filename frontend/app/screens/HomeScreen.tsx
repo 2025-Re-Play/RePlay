@@ -80,11 +80,10 @@ export default function HomeScreen() {
               />
             )}
 
-
             {activeTab === "community" && (
               <CommunityScreen
-                onAddClick={() => setShowPostForm(true)}
                 onCalendarClick={() => setShowCalendar(true)}
+                onHeaderHiddenChange={(hidden) => setHeaderHidden(hidden)}
               />
             )}
 

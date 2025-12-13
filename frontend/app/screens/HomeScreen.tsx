@@ -74,8 +74,12 @@ export default function HomeScreen() {
             )}
 
             {activeTab === "manage" && (
-              <ManageScreen onAddClick={() => setShowItemForm(true)} />
+              <ManageScreen
+                onAddClick={() => setShowItemForm(true)}
+                onDetailModeChange={(isDetail) => setHeaderHidden(isDetail)}
+              />
             )}
+
 
             {activeTab === "community" && (
               <CommunityScreen

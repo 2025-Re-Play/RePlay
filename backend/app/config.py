@@ -11,8 +11,11 @@ class Settings:
     ENV: str = os.getenv("ENV", "local")
     DATABASE_URL: str = os.getenv("DATABASE_URL")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change_me_later")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    JWT_ALGORITHM: str = "HS256"
+
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+
+    ADMIN_SIGNUP_CODE: str = os.getenv("ADMIN_SIGNUP_CODE", "CHANGE_ME")
 
     @property
     def is_local(self) -> bool:

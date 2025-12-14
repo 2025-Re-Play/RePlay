@@ -35,14 +35,12 @@ class UserService:
         saved = UserRepository.create(db, new_user)
         return UserResponse.from_orm(saved)
 
-    def login(self, db: Session, data: UserLogin) -> str:
-        user = UserRepository.get_by_email(db, data.email)
+    def login(self, db: Session, email: str, password: str) -> str:
+        user = UserRepository.get_by_email(db, email)
         if not user:
             raise NotFoundException("해당 이메일을 가진 사용자가 없습니다.")
 
-        if not verify_password(data.password, user.password_hash):
+        if not verify_password(password, user.password_hash):
             raise ValidationException("비밀번호가 일치하지 않습니다.")
 
-        # JWT 발급
-        token = create_access_token({"sub": user.id, "role": user.role.value})
-        return token
+        return create_access_token({"sub": str(user.id), "role": user.role.value})

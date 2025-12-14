@@ -5,21 +5,29 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.utils.security import hash_password, verify_password, create_access_token
 from app.utils.exceptions import AppException, ValidationException, NotFoundException
 from app.models.user import User, UserRole
-
+from app.config import settings
 
 class UserService:
     def signup(self, db: Session, data: UserCreate) -> UserResponse:
-        # 이메일 중복 체크
         existing = UserRepository.get_by_email(db, data.email)
         if existing:
             raise ValidationException("이미 사용 중인 이메일입니다.")
 
-        # User 모델 생성
+        role = UserRole.USER
+
+        # 관리자 가입 처리
+        if data.role == UserRole.ADMIN:
+            if not data.admin_code:
+                raise ValidationException("관리자 가입 코드를 입력해주세요.")
+            if data.admin_code != settings.ADMIN_SIGNUP_CODE:
+                raise ValidationException("관리자 가입 코드가 올바르지 않습니다.")
+            role = UserRole.ADMIN
+
         new_user = User(
             email=data.email,
             password_hash=hash_password(data.password),
             name=data.name,
-            role=UserRole.USER,
+            role=role,
             school_id=data.school_id,
             club_id=data.club_id,
         )

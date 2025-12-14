@@ -5,8 +5,10 @@ import { ChevronLeft, Search, MapPin, Plus, Star } from "lucide-react";
 import Image from "next/image";
 
 type PerformanceCalendarScreenProps = {
+  onBack: () => void; 
   onDetailModeChange?: (isDetail: boolean) => void; // HomeScreen AppHeader 숨김용
 };
+
 
 type View = "list" | "detail" | "create";
 
@@ -125,7 +127,6 @@ export default function PerformanceCalendarScreen({
     });
   }, [performances, city, query]);
 
-  /* -------------------- 헤더들 -------------------- */
 
   // 리스트 전용 헤더 (가운데 타이틀)
   const ListHeader = () => {
@@ -145,17 +146,9 @@ export default function PerformanceCalendarScreen({
       <div className="flex h-14 items-center bg-white px-4">
         <button
           type="button"
-          onClick={() => {
-            if (view === "detail") {
-              setSelectedId(null);
-              setView("list");
-              return;
-            }
-            if (view === "create") {
-              setView("list");
-              return;
-            }
-          }}
+          onClick={() => {onBack}
+
+          }
           className="flex items-center gap-1"
         >
           <ChevronLeft className="h-5 w-5 text-[#A7A7A7]" />

@@ -1,73 +1,148 @@
 // app/screens/ManageScreen.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
 type ManageScreenProps = {
   onAddClick: () => void;
-  // HomeScreen 에서 header 숨길 때 쓰는 선택사항 콜백
   onDetailModeChange?: (isDetail: boolean) => void;
 };
 
 export type ManageItem = {
   id: number;
-  category: string;          // 가구
+
+  // 리스트에 보이는 기본 정보
+  category: string; // 가구/소품/의상/조명 등
   rentalStatus: "대여중" | "거래완" | "거래가능";
-  title: string;             // 상품명
-  school: string;            // 연세대학교
-  tags: string[];            // 태그들
-  purchasedAt: string;       // 2026.03.31 구매
-  statusText: string;        // 상태.. 어쩌구..
-  price: string;             // "331,331원"
-  needsCheck: boolean;       // 점검 필요한 물품 여부
+  title: string;
+  school: string; // 위치/학교
+  tags: string[];
+  purchasedAt: string; // 등록 날짜 (예: 2025.03.12)
+  statusText: string; // 상태 텍스트 (예: 양호/보통/사용감 있음)
+  needsCheck: boolean;
+
+  // 상세에서 추가로 보일 정보
+  size: string; // 크기/규격
+  description: string; // 상품 설명(상세)
+  price: string; // 판매 가격(원)
+  dailyRentPrice: string; // 일일 대여료(원)
+
+  // 사진(네가 png로 저장해둘 경로)
+  images: string[]; // 예: ["/items/item-1.png"]
 };
 
+const categoryOptions = ["가구", "소품", "의상", "조명"];
+const tagOptions = [
+  "빈티지",
+  "고풍스러운",
+  "현대",
+  "전통",
+  "공포",
+  "판타지",
+  "시대극",
+  "코미디",
+  "학교",
+  "현대극",
+  "리얼리즘",
+  "전등",
+  "고풍",
+];
+const rentalStatusOptions: ManageItem["rentalStatus"][] = ["대여중", "거래완"];
+
+type ViewMode = "list" | "detail" | "edit";
+
+/** ✅ 더미 데이터 (네가 이미지 파일만 맞춰서 저장하면 바로 보임)
+ *  예: public/items/item-1.png ... item-5.png
+ */
 const initialItems: ManageItem[] = [
   {
     id: 1,
     category: "가구",
-    rentalStatus: "대여중",
-    title: "상품명",
+    rentalStatus: "거래가능",
+    title: "원목 책상",
     school: "연세대학교",
-    tags: ["태그", "태그", "태그"],
-    purchasedAt: "2026.03.31 구매",
-    statusText: "상태.. 어쩌구..",
-    price: "331,331원",
-    needsCheck: true,
+    tags: ["빈티지", "학교", "현대"],
+    purchasedAt: "2025.03.12 등록",
+    statusText: "양호",
+    needsCheck: false,
+    size: "가로 120cm × 세로 60cm",
+    description:
+      "동아리방에서 2년간 사용한 원목 책상입니다. 주로 소품 정리 및 서류 작업용으로 사용했어요. 구조적으로 튼튼하고, 상판에 생활 스크래치가 약간 있습니다. 일상극/학교 배경 장면에 잘 어울립니다.",
+    price: "70,000원",
+    dailyRentPrice: "5,000원",
+    images: ["/items/item-1.png"],
   },
   {
     id: 2,
     category: "가구",
     rentalStatus: "대여중",
-    title: "상품명",
+    title: "철제 캐비닛 (그레이)",
     school: "연세대학교",
-    tags: ["태그", "태그", "태그"],
-    purchasedAt: "2026.03.31 구매",
-    statusText: "상태.. 어쩌구..",
-    price: "331,331원",
+    tags: ["현대", "학교"],
+    purchasedAt: "2025.03.08 등록",
+    statusText: "보통",
     needsCheck: true,
+    size: "가로 90cm × 세로 45cm × 높이 180cm",
+    description:
+      "동아리방 소품 보관용으로 사용하던 철제 캐비닛입니다. 문 여닫힘 정상이고 내부 선반 포함입니다. 외관에 사용감은 있으나 무대 배경 소품으로 활용하기 좋습니다.",
+    price: "50,000원",
+    dailyRentPrice: "6,000원",
+    images: ["/items/item-2.png"],
   },
   {
     id: 3,
-    category: "가구",
-    rentalStatus: "대여중",
-    title: "상품명",
+    category: "소품",
+    rentalStatus: "거래가능",
+    title: "빈티지 서류 가방",
     school: "연세대학교",
-    tags: ["태그", "태그", "태그"],
-    purchasedAt: "2026.03.31 구매",
-    statusText: "상태.. 어쩌구..",
-    price: "331,331원",
+    tags: ["빈티지", "현대극", "리얼리즘"],
+    purchasedAt: "2025.03.15 등록",
+    statusText: "양호",
     needsCheck: false,
+    size: "가로 40cm × 세로 30cm",
+    description:
+      "현대극 공연에서 직장인 역할 소품으로 사용했던 서류 가방입니다. 가죽 느낌의 외관이라 무대에서 분위기가 잘 살아납니다. 내부 수납공간도 정상입니다.",
+    price: "30,000원",
+    dailyRentPrice: "4,000원",
+    images: ["/items/item-3.png"],
+  },
+  {
+    id: 4,
+    category: "소품",
+    rentalStatus: "거래완",
+    title: "촛대 장식 소품",
+    school: "연세대학교",
+    tags: ["고풍스러운", "판타지", "전통"],
+    purchasedAt: "2025.03.10 등록",
+    statusText: "양호",
+    needsCheck: false,
+    size: "가로 15cm × 세로 30cm",
+    description:
+      "고풍스러운 분위기 연출용 촛대 장식 소품입니다. 실제 초 사용은 하지 않았고 무대 연출용으로만 사용했습니다. 중세/판타지 장면에 잘 어울립니다.",
+    price: "25,000원",
+    dailyRentPrice: "4,000원",
+    images: ["/items/item-4.png"],
+  },
+  {
+    id: 5,
+    category: "조명",
+    rentalStatus: "거래가능",
+    title: "무대용 스탠드 조명",
+    school: "연세대학교",
+    tags: ["공포", "현대", "전등"],
+    purchasedAt: "2025.03.05 등록",
+    statusText: "사용감 있음",
+    needsCheck: true,
+    size: "높이 최대 180cm",
+    description:
+      "소극장 공연에서 반복 사용한 스탠드 조명입니다. 조도 조절 기능 정상 작동하며 외관에 사용 흔적이 있습니다. 공포/드라마 장면 분위기 연출에 효과적입니다.",
+    price: "60,000원",
+    dailyRentPrice: "8,000원",
+    images: ["/items/item-5.png"],
   },
 ];
-
-const categoryOptions = ["가구", "소품", "의상"];
-const tagOptions = ["빈티지", "고풍스러운", "현대", "전통", "공포", "판타지", "시대극", "코미디"];
-const rentalStatusOptions: ManageItem["rentalStatus"][] = ["대여중", "거래완"];
-
-type ViewMode = "list" | "detail" | "edit";
 
 export default function ManageScreen({
   onAddClick,
@@ -98,9 +173,7 @@ export default function ManageScreen({
 
   // 뷰가 리스트가 아닐 때 AppHeader 숨기기
   useEffect(() => {
-    if (onDetailModeChange) {
-      onDetailModeChange(view !== "list");
-    }
+    if (onDetailModeChange) onDetailModeChange(view !== "list");
   }, [view, onDetailModeChange]);
 
   // 필터 chip 활성 여부
@@ -108,36 +181,34 @@ export default function ManageScreen({
     !!categoryFilter || tagFilter.length > 0 || !!rentalStatusFilter;
 
   // 실제 리스트에 적용되는 필터
-  const filteredItems = items.filter((item) => {
-    if (query.trim().length > 0) {
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
       const q = query.trim();
-      if (
-        !(
+      if (q.length > 0) {
+        const ok =
           item.title.includes(q) ||
-          item.tags.some((t) => t.includes(q)) ||
-          item.school.includes(q)
-        )
-      ) {
-        return false;
+          item.school.includes(q) ||
+          item.tags.some((t) => t.includes(q));
+        if (!ok) return false;
       }
-    }
-    if (categoryFilter && item.category !== categoryFilter) return false;
-    if (rentalStatusFilter && item.rentalStatus !== rentalStatusFilter)
-      return false;
-    if (tagFilter.length > 0) {
-      const hasAny = tagFilter.some((tag) => item.tags.includes(tag));
-      if (!hasAny) return false;
-    }
 
-    if (activeFilter === "대여중" && item.rentalStatus !== "대여중") {
-      return false;
-    }
-    if (activeFilter === "거래완" && item.rentalStatus !== "거래완") {
-      return false;
-    }
-    // 나머지 필터는 데모라 그냥 통과
-    return true;
-  });
+      if (categoryFilter && item.category !== categoryFilter) return false;
+      if (rentalStatusFilter && item.rentalStatus !== rentalStatusFilter)
+        return false;
+
+      if (tagFilter.length > 0) {
+        const hasAny = tagFilter.some((tag) => item.tags.includes(tag));
+        if (!hasAny) return false;
+      }
+
+      if (activeFilter === "대여중" && item.rentalStatus !== "대여중")
+        return false;
+      if (activeFilter === "거래완" && item.rentalStatus !== "거래완")
+        return false;
+
+      return true;
+    });
+  }, [items, query, categoryFilter, rentalStatusFilter, tagFilter, activeFilter]);
 
   const checkItems = items.filter((i) => i.needsCheck);
   const checkCount = checkItems.length;
@@ -203,11 +274,7 @@ export default function ManageScreen({
 
   if (view === "detail" && selectedItem) {
     return (
-      <ManageItemDetailView
-        item={selectedItem}
-        onBack={backToList}
-        onEdit={openEdit}
-      />
+      <ManageItemDetailView item={selectedItem} onBack={backToList} onEdit={openEdit} />
     );
   }
 
@@ -227,7 +294,7 @@ export default function ManageScreen({
   return (
     <div className="relative flex h-full flex-col bg-white">
       <div className="no-scrollbar flex-1 overflow-y-auto pb-4">
-        {/* 검색 + 카메라 : padding-x 24px */}
+        {/* 검색 + 카메라 */}
         <div className="space-y-3 px-6 pt-4">
           <div className="flex items-center gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-3xl border border-[#F7F7F7] bg-white px-6 py-3 text-xs text-slate-500 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
@@ -241,26 +308,21 @@ export default function ManageScreen({
             </div>
 
             <button className="mr-4 flex h-12 w-12 items-center justify-center rounded-[20px] bg-gradient-to-r from-white to-[#D9FFEE]">
-              <Image
-                src="/icons/camera.svg"
-                alt="카메라"
-                width={22}
-                height={20}
-              />
+              <Image src="/icons/camera.svg" alt="카메라" width={22} height={20} />
             </button>
           </div>
 
-          {/* 필터 버튼 한 줄 - padding-x 24px */}
+          {/* 필터 버튼 */}
           <div className="flex items-center gap-2 px-4">
             <button
               type="button"
               onClick={handleFilterButtonClick}
               className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition
-              ${
-                isFilterActive
-                  ? "border border-[#0EBC81] bg-[#E7FFF6] text-[#0EBC81]"
-                  : "bg-white text-slate-700 shadow-sm"
-              }`}
+                ${
+                  isFilterActive
+                    ? "border border-[#0EBC81] bg-[#E7FFF6] text-[#0EBC81]"
+                    : "bg-white text-slate-700 shadow-sm"
+                }`}
             >
               <Image
                 src={
@@ -300,11 +362,9 @@ export default function ManageScreen({
                     key={item.id}
                     className="flex items-center gap-3 rounded-[16px] bg-white px-4 py-3"
                   >
-                    <div className="h-12 w-12 rounded-[10px] bg-[#B2B2B2]" />
+                    <ThumbBox src={item.images?.[0]} className="h-12 w-12 rounded-[10px]" />
                     <div className="flex flex-col">
-                      <span className="text-[16px] text-[#1A1A1A]">
-                        {item.title}
-                      </span>
+                      <span className="text-[16px] text-[#1A1A1A]">{item.title}</span>
                       <span className="mt-1 text-[12px] text-[#FF4545]">
                         {item.purchasedAt}
                       </span>
@@ -316,7 +376,7 @@ export default function ManageScreen({
           </section>
         </div>
 
-        {/* 리스트 : padding-x 12px */}
+        {/* 리스트 */}
         <div className="mt-4 space-y-3 px-3 pb-24">
           {filteredItems.map((item) => (
             <ManageItemRow key={item.id} item={item} onClick={() => openDetail(item)} />
@@ -329,12 +389,7 @@ export default function ManageScreen({
         onClick={onAddClick}
         className="fixed bottom-23 right-4 flex items-center justify-center"
       >
-        <Image
-          src="/icons/plus.svg"
-          alt="물품 추가"
-          width={72}
-          height={72}
-        />
+        <Image src="/icons/plus.svg" alt="물품 추가" width={72} height={72} />
       </button>
 
       {/* 필터 바텀시트 */}
@@ -360,13 +415,9 @@ export default function ManageScreen({
                       <button
                         key={status}
                         type="button"
-                        onClick={() =>
-                          setDraftRentalStatus(selected ? null : status)
-                        }
+                        onClick={() => setDraftRentalStatus(selected ? null : status)}
                         className={`rounded-full px-4 py-2 text-sm ${
-                          selected
-                            ? "bg-[#0EBC81] text-white"
-                            : "bg-slate-50 text-slate-700"
+                          selected ? "bg-[#0EBC81] text-white" : "bg-slate-50 text-slate-700"
                         }`}
                       >
                         {status}
@@ -386,13 +437,9 @@ export default function ManageScreen({
                       <button
                         key={label}
                         type="button"
-                        onClick={() =>
-                          setDraftCategory(selected ? null : label)
-                        }
+                        onClick={() => setDraftCategory(selected ? null : label)}
                         className={`rounded-full px-4 py-2 text-sm ${
-                          selected
-                            ? "bg-[#0EBC81] text-white"
-                            : "bg-slate-50 text-slate-700"
+                          selected ? "bg-[#0EBC81] text-white" : "bg-slate-50 text-slate-700"
                         }`}
                       >
                         {label}
@@ -414,9 +461,7 @@ export default function ManageScreen({
                         type="button"
                         onClick={() => toggleDraftTag(tag)}
                         className={`rounded-full px-4 py-2 text-sm ${
-                          selected
-                            ? "bg-[#0EBC81] text-white"
-                            : "bg-slate-50 text-slate-700"
+                          selected ? "bg-[#0EBC81] text-white" : "bg-slate-50 text-slate-700"
                         }`}
                       >
                         {tag}
@@ -441,6 +486,24 @@ export default function ManageScreen({
   );
 }
 
+/* ---------------- 공통: 썸네일(회색 사각형 + 이미지) ---------------- */
+
+function ThumbBox({
+  src,
+  className,
+}: {
+  src?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative overflow-hidden bg-[#B2B2B2] ${className ?? ""}`}>
+      {src ? (
+        <Image src={src} alt="thumbnail" fill className="object-cover" />
+      ) : null}
+    </div>
+  );
+}
+
 /* ---------------- 리스트 아이템 ---------------- */
 
 type RowProps = {
@@ -455,10 +518,8 @@ function ManageItemRow({ item, onClick }: RowProps) {
       onClick={onClick}
       className="flex w-full items-center gap-3 border-b border-slate-100 bg-white px-3 py-3 text-left"
     >
-      {/* 썸네일 */}
-      <div className="h-12 w-12 flex-shrink-0 rounded-[10px] bg-[#B2B2B2]" />
+      <ThumbBox src={item.images?.[0]} className="h-12 w-12 flex-shrink-0 rounded-[10px]" />
 
-      {/* 정보 */}
       <div className="flex flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
           <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
@@ -473,9 +534,7 @@ function ManageItemRow({ item, onClick }: RowProps) {
 
         <p className="text-[16px] font-bold text-[#1A1A1A]">{item.title}</p>
 
-        <p className="text-[12px] text-[#A7A7A7]">
-          {item.tags.join(" · ")}
-        </p>
+        <p className="text-[12px] text-[#A7A7A7]">{item.tags.join(" · ")}</p>
         <p className="text-[12px] text-[#A7A7A7]">{item.purchasedAt}</p>
 
         <p className="mt-1 text-[16px] text-[#1A1A1A]">{item.statusText}</p>
@@ -486,7 +545,7 @@ function ManageItemRow({ item, onClick }: RowProps) {
   );
 }
 
-/* ---------------- 상세 페이지 (사진4) ---------------- */
+/* ---------------- 상세 페이지 ---------------- */
 
 type DetailProps = {
   item: ManageItem;
@@ -497,33 +556,47 @@ type DetailProps = {
 function ManageItemDetailView({ item, onBack, onEdit }: DetailProps) {
   return (
     <div className="flex h-full flex-col bg-white">
-      {/* 자체 헤더 (AppHeader 숨겨져 있음) */}
+      {/* 자체 헤더 */}
       <header className="flex h-14 items-center justify-between px-6">
         <button type="button" onClick={onBack}>
           <ChevronLeft className="h-5 w-5 text-[#9E9E9E]" />
         </button>
-        <span className="text-[16px] font-semibold text-[#1A1A1A]">
-          물건명
-        </span>
-        <div className="w-5" /> {/* 가운데 정렬용 더미 */}
+        <span className="text-[16px] font-semibold text-[#1A1A1A]">{item.title}</span>
+        <div className="w-5" />
       </header>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-4">
-        {/* 이미지 영역 */}
-        <div className="mt-2 h-64 w-full rounded-none bg-[#DFDFDF]" />
-        {/* 인디케이터 점 */}
-        <div className="mt-4 flex justify-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-white" />
+      <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-6">
+        {/* 이미지 */}
+        <div className="mt-2">
+          <ThumbBox
+            src={item.images?.[0]}
+            className="h-64 w-full rounded-none bg-[#DFDFDF]"
+          />
+          <div className="mt-4 flex justify-center gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={`h-2 w-2 rounded-full ${
+                  i === 3 ? "bg-white" : "bg-[#B3B3B3]"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* 카테고리 + 수정 버튼 */}
+        {/* 카테고리 + 수정 */}
         <div className="mt-6 flex items-center justify-between">
-          <span className="inline-flex rounded-[5px] bg-[#E7F8F2] px-3 py-1 text-[14px] font-bold text-[#0EBC81]">
-            {item.category}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex rounded-[5px] bg-[#E7F8F2] px-3 py-1 text-[14px] font-bold text-[#0EBC81]">
+              {item.category}
+            </span>
+            {item.rentalStatus !== "거래가능" && (
+              <span className="inline-flex rounded-[5px] bg-[#FFD9D1] px-3 py-1 text-[14px] font-bold text-[#FF2B00]">
+                {item.rentalStatus}
+              </span>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={onEdit}
@@ -533,27 +606,29 @@ function ManageItemDetailView({ item, onBack, onEdit }: DetailProps) {
           </button>
         </div>
 
-        <p className="mt-4 text-[16px] font-bold text-[#1A1A1A]">
-          {item.title}
-        </p>
+        <p className="mt-4 text-[16px] font-bold text-[#1A1A1A]">{item.title}</p>
         <p className="mt-2 text-[12px] text-[#A7A7A7]">
-          {item.school} · 26.03.31
+          {item.school} · {item.purchasedAt.replace(" 등록", "").replace(" 구매", "")}
         </p>
-        <p className="mt-1 text-[12px] text-[#A7A7A7]">
-          {item.tags.join(" · ")}
-        </p>
+        <p className="mt-1 text-[12px] text-[#A7A7A7]">{item.tags.join(" · ")}</p>
 
-        <p className="mt-6 text-[16px] leading-relaxed text-[#1A1A1A]">
-          상품 설명 글 상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글
-          상품 설명 글상품 설명 글상품 설명 글상품 설명 글
-        </p>
+        <div className="mt-4 space-y-2 text-[14px] text-[#1A1A1A]">
+          <p>
+            <span className="font-semibold">상태</span> · {item.statusText}
+          </p>
+          <p>
+            <span className="font-semibold">크기</span> · {item.size}
+          </p>
+          <p>
+            <span className="font-semibold">일일 대여료</span> · {item.dailyRentPrice}
+          </p>
+        </div>
 
-        <p className="mt-8 text-[20px] font-semibold text-[#1A1A1A]">
-          {item.price}
-        </p>
+        <p className="mt-6 text-[16px] leading-relaxed text-[#1A1A1A]">{item.description}</p>
 
-        {/* 아래 버튼 2개 : border-radius 10px, gap 8px */}
-        <div className="mt-6 mb-8 flex gap-2">
+        <p className="mt-8 text-[20px] font-semibold text-[#1A1A1A]">{item.price}</p>
+
+        <div className="mt-6 flex gap-2">
           <button
             type="button"
             className="flex-1 rounded-[10px] bg-[#1976FF] py-3 text-center text-[14px] font-semibold text-white"
@@ -572,7 +647,7 @@ function ManageItemDetailView({ item, onBack, onEdit }: DetailProps) {
   );
 }
 
-/* ---------------- 수정 페이지 (사진5) ---------------- */
+/* ---------------- 수정 페이지 ---------------- */
 
 type EditProps = {
   item: ManageItem;
@@ -581,26 +656,20 @@ type EditProps = {
   onSave: () => void;
 };
 
-function ManageItemEditView({
-  item,
-  onChange,
-  onBack,
-  onSave,
-}: EditProps) {
-  const handleFieldChange = (field: keyof ManageItem, value: string) => {
+function ManageItemEditView({ item, onChange, onBack, onSave }: EditProps) {
+  const setField = (field: keyof ManageItem, value: any) => {
     onChange({ ...item, [field]: value });
   };
 
   return (
     <div className="flex h-full flex-col bg-white">
-      {/* 헤더 */}
       <header className="flex h-14 items-center justify-between px-6">
         <button type="button" onClick={onBack}>
           <ChevronLeft className="h-5 w-5 text-[#9E9E9E]" />
         </button>
-        <span className="text-[16px] font-semibold text-[#1A1A1A]">
-          물건명
-        </span>
+
+        <span className="text-[16px] font-semibold text-[#1A1A1A]">{item.title}</span>
+
         <button
           type="button"
           onClick={onSave}
@@ -610,72 +679,135 @@ function ManageItemEditView({
         </button>
       </header>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-4">
-        {/* 이미지 영역 */}
-        <div className="mt-2 h-64 w-full bg-[#DFDFDF]" />
-        <div className="mt-4 flex justify-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-[#B3B3B3]" />
-          <span className="h-2 w-2 rounded-full bg-white" />
+      <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-6">
+        <div className="mt-2">
+          <ThumbBox src={item.images?.[0]} className="h-64 w-full bg-[#DFDFDF]" />
+          <div className="mt-4 flex justify-center gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={`h-2 w-2 rounded-full ${
+                  i === 3 ? "bg-white" : "bg-[#B3B3B3]"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* 카테고리 (드롭다운 모양만) */}
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-[10px] border border-[#E0E0E0] px-4 py-2 text-[14px] text-[#4F4F4F]"
+        {/* 종류/상태 */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <select
+            value={item.category}
+            onChange={(e) => setField("category", e.target.value)}
+            className="rounded-[10px] border border-[#E0E0E0] px-4 py-2 text-[14px] text-[#4F4F4F] outline-none"
           >
-            가구
-            <ChevronRight className="h-4 w-4 rotate-90 text-[#B5BBC1]" />
-          </button>
+            {categoryOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={item.rentalStatus}
+            onChange={(e) => setField("rentalStatus", e.target.value as any)}
+            className="rounded-[10px] border border-[#E0E0E0] px-4 py-2 text-[14px] text-[#4F4F4F] outline-none"
+          >
+            {["거래가능", "대여중", "거래완"].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <input
+            value={item.statusText}
+            onChange={(e) => setField("statusText", e.target.value)}
+            className="flex-1 min-w-[120px] rounded-[10px] border border-[#E0E0E0] px-4 py-2 text-[14px] text-[#4F4F4F] outline-none"
+            placeholder="상태(양호/보통...)"
+          />
         </div>
 
-        {/* 제목 */}
         <input
           className="mt-6 w-full rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[16px] text-[#1A1A1A] outline-none"
           value={item.title}
-          onChange={(e) => handleFieldChange("title", e.target.value)}
+          onChange={(e) => setField("title", e.target.value)}
+          placeholder="물품명"
         />
 
-        {/* 학교 + 날짜 */}
         <input
           className="mt-3 w-full rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[14px] text-[#1A1A1A] outline-none"
-          value={`${item.school} · 26.03.31`}
-          onChange={(e) => {
-            // 데모라 school 부분만 대충 업데이트
-            handleFieldChange("school", e.target.value);
-          }}
+          value={item.school}
+          onChange={(e) => setField("school", e.target.value)}
+          placeholder="학교/위치"
         />
 
-        {/* 태그 */}
+        <input
+          className="mt-3 w-full rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[14px] text-[#1A1A1A] outline-none"
+          value={item.size}
+          onChange={(e) => setField("size", e.target.value)}
+          placeholder="크기"
+        />
+
         <input
           className="mt-3 w-full rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[14px] text-[#1A1A1A] outline-none"
           value={item.tags.join(" · ")}
           onChange={(e) =>
-            onChange({
-              ...item,
-              tags: e.target.value.split("·").map((s) => s.trim()),
-            })
+            setField(
+              "tags",
+              e.target.value
+                .split("·")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            )
           }
+          placeholder="태그 ( · 로 구분)"
         />
 
-        {/* 설명 */}
         <textarea
           className="mt-4 h-40 w-full rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[14px] text-[#1A1A1A] outline-none"
+          value={item.description}
+          onChange={(e) => setField("description", e.target.value)}
           placeholder="상품 설명을 적어주세요"
         />
 
-        {/* 가격 */}
-        <div className="mt-6 flex items-center gap-4">
-          <input
-            className="flex-1 rounded-[12px] border border-[#E0E0E0] px-4 py-3 text-[16px] text-[#1A1A1A] outline-none"
-            value={item.price.replace("원", "")}
-            onChange={(e) =>
-              handleFieldChange("price", `${e.target.value}원`)
-            }
-          />
-          <span className="text-[16px] text-[#1A1A1A]">원</span>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2 rounded-[12px] border border-[#E0E0E0] px-4 py-3">
+            <input
+              className="w-full text-[14px] text-[#1A1A1A] outline-none"
+              value={item.price.replace("원", "").replaceAll(",", "")}
+              onChange={(e) => setField("price", `${e.target.value}원`)}
+              placeholder="판매가"
+            />
+            <span className="text-[14px] text-[#1A1A1A]">원</span>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-[12px] border border-[#E0E0E0] px-4 py-3">
+            <input
+              className="w-full text-[14px] text-[#1A1A1A] outline-none"
+              value={item.dailyRentPrice.replace("원", "").replaceAll(",", "")}
+              onChange={(e) => setField("dailyRentPrice", `${e.target.value}원`)}
+              placeholder="일일 대여료"
+            />
+            <span className="text-[14px] text-[#1A1A1A]">원</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between rounded-[12px] border border-[#E0E0E0] px-4 py-3">
+          <span className="text-[14px] text-[#4F4F4F]">점검 필요</span>
+          <button
+            type="button"
+            onClick={() => setField("needsCheck", !item.needsCheck)}
+            className={`h-7 w-12 rounded-full p-1 transition ${
+              item.needsCheck ? "bg-[#0EBC81]" : "bg-[#D1D6DB]"
+            }`}
+          >
+            <div
+              className={`h-5 w-5 rounded-full bg-white transition ${
+                item.needsCheck ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
       </div>
     </div>

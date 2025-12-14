@@ -1,6 +1,7 @@
+// app/screens/CommunityScreen.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 
@@ -18,18 +19,28 @@ type Post = {
   title: string;
   preview: string;
   content: string;
-  createdAgo: string; // "11분 전"
+  createdAgo: string;
   likeCount: number;
   commentCount: number;
   hasImage?: boolean;
   liked?: boolean;
+
+  // ✅ 글쓰기에서 선택한 이미지 미리보기(데모용)
+  // 실제 업로드를 붙이면 URL 대신 서버 URL 넣으면 됨
+  images?: string[];
 };
 
 type Comment = {
   id: number;
   author: string;
-  date: string; // "26.03.31"
+  date: string;
   text: string;
+};
+
+type PickedImage = {
+  id: string;
+  file: File;
+  previewUrl: string; // URL.createObjectURL
 };
 
 const mockPosts: Post[] = [
@@ -46,6 +57,7 @@ const mockPosts: Post[] = [
     commentCount: 3,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 102,
@@ -59,6 +71,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 103,
@@ -72,6 +85,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 104,
@@ -85,6 +99,7 @@ const mockPosts: Post[] = [
     commentCount: 3,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 105,
@@ -98,6 +113,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
 
   // ---------------- 소품 요청 게시판 ----------------
@@ -113,6 +129,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 202,
@@ -126,6 +143,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 203,
@@ -139,6 +157,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 204,
@@ -152,6 +171,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
   {
     id: 205,
@@ -165,6 +185,7 @@ const mockPosts: Post[] = [
     commentCount: 2,
     hasImage: false,
     liked: false,
+    images: [],
   },
 ];
 
@@ -191,166 +212,22 @@ export default function CommunityScreen({
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
 
-  // ✅ 더미 댓글 데이터
-  const [commentsByPost, setCommentsByPost] = useState<Record<number, Comment[]>>(
-    {
-      // 일반 게시판 댓글
-      101: [
-        {
-          id: 1001,
-          author: "cinema_dong",
-          date: "26.03.31",
-          text: "소니 a6400 많이 쓰는 편이에요. 영상 AF 안정적이고 중고도 많아요.",
-        },
-        {
-          id: 1002,
-          author: "hyun_pd",
-          date: "26.03.31",
-          text: "예산 적으면 캐논 EOS R10도 괜찮아요. 색감 무난해서 후보정 부담 적어요.",
-        },
-        {
-          id: 1003,
-          author: "lens_addict",
-          date: "26.03.31",
-          text: "바디보다 렌즈 중요해요. 35mm 단렌즈 하나 있으면 활용도 높습니다.",
-        },
-      ],
-      102: [
-        {
-          id: 1101,
-          author: "theatre_hae",
-          date: "26.03.31",
-          text: "혜화 ○○소극장 학생 할인 있어요. 대신 조명 장비는 단출해요.",
-        },
-        {
-          id: 1102,
-          author: "stagehand",
-          date: "26.03.31",
-          text: "연습실 같이 빌려주는 곳은 드물어서 근처 연습실 따로 알아보는 게 나아요.",
-        },
-      ],
-      103: [
-        {
-          id: 1201,
-          author: "director_kim",
-          date: "26.03.31",
-          text: "핵심 키워드 하나 정해두고 거기서 벗어나면 다시 잡는 방식 추천해요.",
-        },
-        {
-          id: 1202,
-          author: "old_member",
-          date: "26.03.31",
-          text: "최종 결정권자 한 명 정하는 것도 필요하더라고요.",
-        },
-      ],
-      104: [
-        {
-          id: 1301,
-          author: "actor_seeker",
-          date: "26.03.31",
-          text: "네이버 카페 '단편영화 배우 모집' 쪽에 공고 올리면 연락 꽤 와요.",
-        },
-        {
-          id: 1302,
-          author: "film_mentor",
-          date: "26.03.31",
-          text: "학교 커뮤니티나 타 학교 연극과 단톡도 은근 도움 됩니다.",
-        },
-        {
-          id: 1303,
-          author: "casting_noob",
-          date: "26.03.31",
-          text: "모집글에 일정/무보수 여부 솔직히 쓰는 게 중요해요.",
-        },
-      ],
-      105: [
-        {
-          id: 1401,
-          author: "stage_lead",
-          date: "26.03.31",
-          text: "공연 전엔 피드백 최소화하고 잘한 점 위주로 말해요.",
-        },
-        {
-          id: 1402,
-          author: "emotion_mgr",
-          date: "26.03.31",
-          text: "회식보다는 간단한 간식 타임이 오히려 분위기 좋아지더라고요.",
-        },
-      ],
+  // ✅ 글쓰기 이미지 상태
+  const [draftImages, setDraftImages] = useState<PickedImage[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-      // 소품 요청 게시판 댓글
-      201: [
-        {
-          id: 2001,
-          author: "prop_owner",
-          date: "26.03.31",
-          text: "연세대 동아리방에 소형 원목 식탁 하나 있어요. 대여 가능합니다!",
-        },
-        {
-          id: 2002,
-          author: "stage_helper",
-          date: "26.03.31",
-          text: "대학로 소품 대여처에서도 비슷한 사이즈 봤어요. 링크 필요하시면 드릴게요.",
-        },
-      ],
-      202: [
-        {
-          id: 2101,
-          author: "vintage_prop",
-          date: "26.03.31",
-          text: "저희 동아리에 장식용 초대 2개 있습니다. 사진 보내드릴 수 있어요.",
-        },
-        {
-          id: 2102,
-          author: "theatre_senior",
-          date: "26.03.31",
-          text: "소극장 공연 끝나고 남은 소품들 종종 커뮤니티에 올라옵니다.",
-        },
-      ],
-      203: [
-        {
-          id: 2201,
-          author: "costume_mgr",
-          date: "26.03.31",
-          text: "남자 교복 하복 세트 하나 있어요. 사이즈 95/30 정도입니다.",
-        },
-        {
-          id: 2202,
-          author: "drama_friend",
-          date: "26.03.31",
-          text: "여학생 교복은 근처 의상실에서 저렴하게 빌린 적 있어요.",
-        },
-      ],
-      204: [
-        {
-          id: 2301,
-          author: "prop_team",
-          date: "26.03.31",
-          text: "겉표지 빈티지한 책 5권 정도 빌려드릴 수 있어요.",
-        },
-        {
-          id: 2302,
-          author: "diy_maker",
-          date: "26.03.31",
-          text: "표지만 프린트해서 씌우는 방식도 괜찮아요. 시간 절약됩니다.",
-        },
-      ],
-      205: [
-        {
-          id: 2401,
-          author: "film_prop",
-          date: "26.03.31",
-          text: "다이얼 전화기 하나 보유 중입니다. 외형 상태 좋아요.",
-        },
-        {
-          id: 2402,
-          author: "cinema_info",
-          date: "26.03.31",
-          text: "인천 쪽 소품 창고에 비슷한 거 많아요.",
-        },
-      ],
-    }
-  );
+  // ✅ 더미 댓글 데이터
+  const [commentsByPost, setCommentsByPost] = useState<Record<number, Comment[]>>({
+    101: [
+      { id: 1001, author: "cinema_dong", date: "26.03.31", text: "소니 a6400 많이 쓰는 편이에요. 영상 AF 안정적이고 중고도 많아요." },
+      { id: 1002, author: "hyun_pd", date: "26.03.31", text: "예산 적으면 캐논 EOS R10도 괜찮아요. 색감 무난해서 후보정 부담 적어요." },
+      { id: 1003, author: "lens_addict", date: "26.03.31", text: "바디보다 렌즈 중요해요. 35mm 단렌즈 하나 있으면 활용도 높습니다." },
+    ],
+    201: [
+      { id: 2001, author: "prop_owner", date: "26.03.31", text: "연세대 동아리방에 소형 원목 식탁 하나 있어요. 대여 가능합니다!" },
+      { id: 2002, author: "stage_helper", date: "26.03.31", text: "대학로 소품 대여처에서도 비슷한 사이즈 봤어요. 링크 필요하시면 드릴게요." },
+    ],
+  });
 
   const selectedPost = useMemo(() => {
     if (!selectedPostId) return null;
@@ -363,18 +240,13 @@ export default function CommunityScreen({
       .filter((p) => p.board === activeBoard)
       .filter((p) => {
         if (!q) return true;
-        return (
-          p.title.includes(q) ||
-          p.preview.includes(q) ||
-          p.content.includes(q)
-        );
+        return p.title.includes(q) || p.preview.includes(q) || p.content.includes(q);
       });
   }, [posts, activeBoard, query]);
 
   // ✅ 상세/글쓰기일 때 AppHeader 숨김
   useEffect(() => {
-    if (!onHeaderHiddenChange) return;
-    onHeaderHiddenChange(mode === "detail" || mode === "write");
+    onHeaderHiddenChange?.(mode === "detail" || mode === "write");
   }, [mode, onHeaderHiddenChange]);
 
   const openDetail = (postId: number) => {
@@ -391,10 +263,22 @@ export default function CommunityScreen({
     setDraftBoard(activeBoard);
     setDraftTitle("");
     setDraftContent("");
+
+    // ✅ 이전에 고른 이미지 미리보기 해제 + 초기화
+    setDraftImages((prev) => {
+      prev.forEach((x) => URL.revokeObjectURL(x.previewUrl));
+      return [];
+    });
+
     setMode("write");
   };
 
   const closeWrite = () => {
+    // ✅ 나갈 때도 revoke
+    setDraftImages((prev) => {
+      prev.forEach((x) => URL.revokeObjectURL(x.previewUrl));
+      return [];
+    });
     setMode("list");
   };
 
@@ -412,13 +296,18 @@ export default function CommunityScreen({
       createdAgo: "방금 전",
       likeCount: 0,
       commentCount: 0,
-      hasImage: false,
+      hasImage: draftImages.length > 0,
       liked: false,
+      images: draftImages.map((x) => x.previewUrl),
     };
 
     setPosts((prev) => [newPost, ...prev]);
     setActiveBoard(draftBoard);
     setMode("list");
+
+    // ✅ 작성 후 파일상태 초기화(미리보기는 포스트에서 계속 쓰니까 revoke 하면 안 됨)
+    // 실제 업로드 붙이면 여기서 서버 URL로 바꾸고 revoke 해도 됨
+    setDraftImages([]);
   };
 
   const toggleLike = (postId: number) => {
@@ -431,7 +320,7 @@ export default function CommunityScreen({
           liked: !liked,
           likeCount: liked ? p.likeCount - 1 : p.likeCount + 1,
         };
-      })
+      }),
     );
   };
 
@@ -451,11 +340,40 @@ export default function CommunityScreen({
       return { ...prev, [postId]: [newComment, ...arr] };
     });
 
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p
-      )
-    );
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)));
+  };
+
+  // ✅ 파일 선택 관련
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    setDraftImages((prev) => {
+      const remain = Math.max(0, 4 - prev.length);
+      const take = files.slice(0, remain);
+
+      const next: PickedImage[] = take.map((f) => ({
+        id: `${f.name}-${f.size}-${f.lastModified}-${Math.random()}`,
+        file: f,
+        previewUrl: URL.createObjectURL(f),
+      }));
+
+      return [...prev, ...next];
+    });
+
+    e.target.value = "";
+  };
+
+  const removeDraftImage = (id: string) => {
+    setDraftImages((prev) => {
+      const target = prev.find((x) => x.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((x) => x.id !== id);
+    });
   };
 
   // ------------------ DETAIL UI ------------------
@@ -483,6 +401,12 @@ export default function CommunityScreen({
         onChangeTitle={setDraftTitle}
         onChangeContent={setDraftContent}
         onSubmit={submitWrite}
+        // ✅ 이미지 관련 props
+        fileInputRef={fileInputRef}
+        images={draftImages}
+        onOpenFilePicker={openFilePicker}
+        onPickFiles={onPickFiles}
+        onRemoveImage={removeDraftImage}
       />
     );
   }
@@ -510,9 +434,7 @@ export default function CommunityScreen({
         >
           <div className="flex items-center gap-3">
             <Image src="/icons/calendar.svg" alt="캘린더" width={24} height={24} />
-            <span className="text-[16px] font-bold text-[#1A1A1A]">
-              대학 공연 일정 확인
-            </span>
+            <span className="text-[16px] font-bold text-[#1A1A1A]">대학 공연 일정 확인</span>
           </div>
           <Image src="/icons/arrow-right.svg" alt="이동" width={24} height={24} />
         </button>
@@ -533,7 +455,7 @@ export default function CommunityScreen({
                       : "bg-white text-[#D1D6DB] shadow-[0_8px_30px_rgba(15,23,42,0.04)] border border-[#F2F2F2]"
                   }`}
               >
-                {b === "일반 게시판" ? "일반 게시판" : "소품 요청 게시판"}
+                {b}
               </button>
             );
           })}
@@ -548,11 +470,7 @@ export default function CommunityScreen({
       </div>
 
       {/* 글쓰기 버튼 */}
-      <button
-        type="button"
-        onClick={openWrite}
-        className="fixed bottom-20 right-2 flex items-center justify-center"
-      >
+      <button type="button" onClick={openWrite} className="fixed bottom-20 right-2 flex items-center justify-center">
         <Image src="/icons/pencil.svg" alt="글쓰기" width={96} height={96} />
       </button>
     </div>
@@ -563,12 +481,11 @@ export default function CommunityScreen({
 
 function PostRow({ post, onClick }: { post: Post; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-4 text-left"
-    >
-      <div className="h-[96px] w-[96px] rounded-[20px] bg-[#D9D9D9]" />
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-4 text-left">
+      {/* 썸네일(있으면 첫 이미지, 없으면 회색) */}
+      <div className="relative h-[96px] w-[96px] overflow-hidden rounded-[20px] bg-[#D9D9D9]">
+        {post.images?.[0] ? <Image src={post.images[0]} alt="thumb" fill className="object-cover" unoptimized /> : null}
+      </div>
 
       <div className="flex-1">
         <p className="text-[16px] font-bold text-[#1A1A1A]">{post.title}</p>
@@ -619,42 +536,25 @@ function CommunityDetail({
 
       <div className="no-scrollbar flex-1 overflow-y-auto px-6 pt-2 pb-[140px]">
         <div className="flex items-start justify-between">
-          <h1 className="text-[24px] font-bold text-[#1A1A1A]">{post.title}</h1>
-          <span className="pt-2 text-[14px] text-[#9E9E9E]">
-            {post.createdAgo}
-          </span>
+          <p className="text-[20px] font-bold text-[#1A1A1A]">{post.title}</p>
+          <span className="pt-2 text-[14px] font-medium text-[#9E9E9E]">{post.createdAgo}</span>
         </div>
 
-        <p className="mt-6 whitespace-pre-line text-[16px] font-bold text-[#1A1A1A] leading-[1.6]">
-          {post.content}
-        </p>
+        <p className="mt-6 whitespace-pre-line text-[16px] font-medium text-[#1A1A1A] leading-[1.6]">{post.content}</p>
 
-        <div className="mt-6 h-[260px] w-full rounded-[20px] bg-[#D9D9D9]" />
+        {/* 이미지 박스(첫 장만) */}
+        <div className="mt-6 relative h-[260px] w-full overflow-hidden rounded-[20px] bg-[#D9D9D9]">
+          {post.images?.[0] ? <Image src={post.images[0]} alt="post" fill className="object-cover" unoptimized /> : null}
+        </div>
 
         <div className="mt-6 flex items-center justify-between border-b border-[#F2F2F2] pb-4">
-          <button
-            type="button"
-            onClick={onToggleLike}
-            className="flex items-center gap-2 text-[14px]"
-          >
-            <Image
-              src={post.liked ? "/icons/like.svg" : "/icons/like-gray.svg"}
-              alt="공감"
-              width={20}
-              height={20}
-            />
-            <span className={post.liked ? "text-[#0EBC81]" : "text-[#9E9E9E]"}>
-              공감 {post.likeCount}
-            </span>
+          <button type="button" onClick={onToggleLike} className="flex items-center gap-2 text-[14px]">
+            <Image src={post.liked ? "/icons/like.svg" : "/icons/like-gray.svg"} alt="공감" width={20} height={20} />
+            <span className={post.liked ? "text-[#0EBC81]" : "text-[#9E9E9E]"}>공감 {post.likeCount}</span>
           </button>
 
           <div className="flex items-center gap-2 text-[14px] text-[#9E9E9E]">
-            <Image
-              src="/icons/comment-gray.svg"
-              alt="댓글"
-              width={20}
-              height={20}
-            />
+            <Image src="/icons/comment-gray.svg" alt="댓글" width={20} height={20} />
             <span>댓글 {post.commentCount}</span>
           </div>
         </div>
@@ -665,14 +565,10 @@ function CommunityDetail({
               <div className="h-12 w-12 rounded-full bg-[#D9D9D9]" />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[16px] font-bold text-[#1A1A1A]">
-                    {c.author}
-                  </span>
+                  <span className="text-[14px] font-medium text-[#1A1A1A]">{c.author}</span>
                   <span className="text-[14px] text-[#D1D6DB]">{c.date}</span>
                 </div>
-                <p className="mt-2 text-[16px] font-bold text-[#1A1A1A]">
-                  {c.text}
-                </p>
+                <p className="mt-2 text-[14px] font-medium text-[#1A1A1A]">{c.text}</p>
               </div>
             </div>
           ))}
@@ -683,9 +579,7 @@ function CommunityDetail({
       <div className="fixed bottom-20 left-0 right-0 bg-white px-6 py-3 border-t border-[#F2F2F2]">
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 rounded-[12px] border border-[#F2F2F2]
-                       px-4 py-3 text-[14px] outline-none
-                       placeholder:text-[#D1D6DB]"
+            className="flex-1 rounded-[12px] border border-[#F2F2F2] px-4 py-3 text-[14px] outline-none placeholder:text-[#D1D6DB]"
             placeholder="댓글을 입력하세요"
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
@@ -718,6 +612,12 @@ function CommunityWrite({
   onChangeTitle,
   onChangeContent,
   onSubmit,
+
+  fileInputRef,
+  images,
+  onOpenFilePicker,
+  onPickFiles,
+  onRemoveImage,
 }: {
   board: BoardKey;
   title: string;
@@ -727,6 +627,12 @@ function CommunityWrite({
   onChangeTitle: (v: string) => void;
   onChangeContent: (v: string) => void;
   onSubmit: () => void;
+
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  images: PickedImage[];
+  onOpenFilePicker: () => void;
+  onPickFiles: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveImage: (id: string) => void;
 }) {
   return (
     <div className="relative flex h-full flex-col bg-white">
@@ -736,14 +642,13 @@ function CommunityWrite({
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <button
-          type="button"
-          onClick={onSubmit}
-          className="rounded-[10px] bg-[#E7F8F2] px-4 py-2 text-[14px] font-bold text-[#0EBC81]"
-        >
+        <button type="button" onClick={onSubmit} className="rounded-[10px] bg-[#E7F8F2] px-4 py-2 text-[14px] font-bold text-[#0EBC81]">
           등록
         </button>
       </div>
+
+      {/* ✅ 숨겨진 파일 인풋(필수) */}
+      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
 
       <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-24 pt-4">
         {/* 게시판 선택 */}
@@ -753,14 +658,11 @@ function CommunityWrite({
               key={b}
               type="button"
               onClick={() => onChangeBoard(b)}
-              className={`rounded-full px-4 py-2 text-[14px] font-bold
-                ${
-                  board === b
-                    ? "bg-[#0EBC81] text-white"
-                    : "bg-[#F2F2F2] text-[#9E9E9E]"
-                }`}
+              className={`rounded-full px-4 py-2 text-[14px] font-bold ${
+                board === b ? "bg-[#0EBC81] text-white" : "bg-[#F2F2F2] text-[#9E9E9E]"
+              }`}
             >
-              {b === "일반 게시판" ? "일반 게시판" : "소품 요청 게시판"}
+              {b}
             </button>
           ))}
         </div>
@@ -773,14 +675,20 @@ function CommunityWrite({
           onChange={(e) => onChangeTitle(e.target.value)}
         />
 
-        {/* 사진 추가 버튼 */}
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            className="rounded-[16px] bg-[#0EBC81] px-8 py-4 text-[16px] font-bold text-white"
-          >
-            사진 추가
-          </button>
+        {/* ✅ 사진 추가 + 미리보기 */}
+        <div className="mt-6">
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={onOpenFilePicker}
+              disabled={images.length >= 4}
+              className={`rounded-[10px] px-4 py-2 text-[14px] font-bold ${
+                images.length >= 4 ? "bg-[#F2F2F2] text-[#9E9E9E]" : "bg-[#E7F8F2] text-[#0EBC81]"
+              }`}
+            >
+              사진 추가
+            </button>
+          </div>
         </div>
 
         {/* 내용 */}

@@ -1,328 +1,344 @@
 "use client";
 
-import { Camera, ChevronLeft, ChevronDown, Plus } from "lucide-react";
-import { useState } from "react";
-
-const typeOptions = ["대가구", "소가구", "의상", "소품", "조명", "음향", "기타"];
-const conditionOptions = ["새 제품", "거의 새것", "양호", "보통", "사용감 있음"];
-
-const defaultTags = [
-  "#빈티지",
-  "#학교",
-  "#고풍스러운",
-  "#현대",
-  "#전통",
-  "#로맨틱",
-  "#공포",
-  "#판타지",
-];
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { ChevronLeft, ChevronDown } from "lucide-react";
 
 type ItemNewScreenProps = {
   onBack: () => void;
+  onHeaderHiddenChange?: (hidden: boolean) => void;
 };
 
-export default function ItemNewScreen({ onBack }: ItemNewScreenProps) {
-  // 드롭다운 상태
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [conditionOpen, setConditionOpen] = useState(false);
-  const [type, setType] = useState<string | null>(null);
-  const [condition, setCondition] = useState<string | null>(null);
+const CATEGORY_OPTIONS = ["가구", "소품", "의상", "조명"];
+const SCHOOL_OPTIONS = [
+  "연세대학교",
+  "서울대학교",
+  "고려대학교",
+  "서강대학교",
+  "이화여자대학교",
+];
 
-  // 태그
-  const [tags, setTags] = useState(defaultTags);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+type PickedImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
 
-  // 토글
-  const [sellEnabled, setSellEnabled] = useState(true);
-  const [rentEnabled, setRentEnabled] = useState(true);
+export default function ItemNewScreen({
+  onBack,
+  onHeaderHiddenChange,
+}: ItemNewScreenProps) {
+  useEffect(() => {
+    onHeaderHiddenChange?.(true);
+    return () => onHeaderHiddenChange?.(false);
+  }, [onHeaderHiddenChange]);
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const [category, setCategory] = useState<string>("가구");
+  const [title, setTitle] = useState("");
+  const [school, setSchool] = useState("연세대학교");
+  const [tagsText, setTagsText] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [dailyRentPrice, setDailyRentPrice] = useState("");
+  const [size, setSize] = useState("");
+  const [condition, setCondition] = useState("");
+  const [needsCheck, setNeedsCheck] = useState(false);
+
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showSchoolMenu, setShowSchoolMenu] = useState(false);
+
+  const [images, setImages] = useState<PickedImage[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const canSubmit = useMemo(() => {
+    if (!title.trim()) return false;
+    if (!description.trim()) return false;
+    if (!price.trim()) return false;
+    return true;
+  }, [title, description, price]);
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
   };
 
-  const handleAddTag = () => {
-    const value = tagInput.trim();
-    if (!value) return;
-    const tag = value.startsWith("#") ? value : `#${value}`;
-    if (!tags.includes(tag)) {
-      setTags([...tags, tag]);
-    }
-    if (!selectedTags.includes(tag)) {
-      setSelectedTags([...selectedTags, tag]);
-    }
-    setTagInput("");
+  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    setImages((prev) => {
+      const remain = Math.max(0, 4 - prev.length);
+      const take = files.slice(0, remain);
+
+      const next: PickedImage[] = take.map((f) => ({
+        id: `${f.name}-${f.size}-${f.lastModified}-${Math.random()}`,
+        file: f,
+        previewUrl: URL.createObjectURL(f),
+      }));
+
+      return [...prev, ...next];
+    });
+
+    e.target.value = "";
   };
+
+  const removeImage = (id: string) => {
+    setImages((prev) => {
+      const target = prev.find((x) => x.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((x) => x.id !== id);
+    });
+  };
+
+  const submit = () => {
+    if (!canSubmit) return;
+    // TODO: API 업로드 (images.map(x => x.file))
+    onBack();
+  };
+
+  const mainPreview = images[0]?.previewUrl ?? null;
 
   return (
-    // HomeScreen의 <main> 안에 들어가는 영역
-    <div className="relative flex h-full flex-col bg-slate-50">
-      {/* 이 div 안만 스크롤되게 */}
-      <main className="no-scrollbar flex-1 overflow-y-auto bg-slate-50 px-4 py-4 space-y-4">
-        {/* 상단 뒤로가기 버튼 (헤더 대신) */}
+    <div className="relative flex h-full flex-col bg-white">
+      {/* 헤더 */}
+      <header className="flex h-20 items-center justify-between border-b border-slate-100 px-6">
+        <button type="button" onClick={onBack} className="flex items-center">
+          <ChevronLeft className="h-6 w-6 text-[#9E9E9E]" />
+        </button>
+
+        <p className="text-[16px] font-semibold text-[#1A1A1A]">물건 등록</p>
+
         <button
           type="button"
-          className="mb-2 inline-flex items-center text-xs text-slate-400"
-          onClick={onBack}
+          onClick={submit}
+          disabled={!canSubmit}
+          className={`rounded-[12px] px-4 py-2 text-[14px] font-bold
+            ${
+              canSubmit
+                ? "bg-[#E7F8F2] text-[#0EBC81]"
+                : "bg-[#F2F2F2] text-[#D1D6DB]"
+            }`}
         >
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          <span>뒤로</span>
+          등록
         </button>
+      </header>
 
-        {/* 사진 업로드 박스 */}
-        <section className="space-y-2">
-          <p className="text-xs font-medium text-slate-700">사진 (0/5)</p>
-          <button className="flex h-28 w-28 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-500">
-            <Camera className="h-5 w-5 text-slate-400" />
-            <span>추가</span>
-          </button>
-        </section>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={onPickFiles}
+      />
 
-        {/* 물품명 */}
-        <section className="space-y-1">
-          <Label>물품명 *</Label>
-          <Input placeholder="물품 이름을 입력하세요" />
-        </section>
+      {/* 스크롤 */}
+      <main className="no-scrollbar flex-1 overflow-y-auto pb-24">
+        {/* 이미지 섹션 */}
+        <section className="bg-[#D9D9D9]">
+          <div className="relative h-[260px] w-full overflow-hidden bg-[#D9D9D9]">
+            {mainPreview ? (
+              <Image
+                src={mainPreview}
+                alt="preview"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[#D9D9D9]" />
+            )}
 
-        {/* 종류 / 상태 */}
-        <section className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label>종류 *</Label>
-            <Dropdown
-              open={typeOpen}
-              onOpenChange={setTypeOpen}
-              placeholder="선택"
-              value={type}
-              options={typeOptions}
-              onSelect={(v) => {
-                setType(v);
-                setTypeOpen(false);
-              }}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>상태 *</Label>
-            <Dropdown
-              open={conditionOpen}
-              onOpenChange={setConditionOpen}
-              placeholder="선택"
-              value={condition}
-              options={conditionOptions}
-              onSelect={(v) => {
-                setCondition(v);
-                setConditionOpen(false);
-              }}
-            />
-          </div>
-        </section>
-
-        {/* 크기 */}
-        <section className="space-y-1">
-          <Label>크기</Label>
-          <Input placeholder="예: 가로 50cm x 세로 30cm" />
-        </section>
-
-        {/* 설명 */}
-        <section className="space-y-1">
-          <Label>설명</Label>
-          <Textarea placeholder="물품에 대한 상세 설명을 입력하세요" />
-        </section>
-
-        {/* 태그 */}
-        <section className="space-y-2">
-          <Label>태그</Label>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => {
-              const active = selectedTags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`rounded-full px-3 py-1 text-[11px] ${
-                    active
-                      ? "bg-emerald-500 text-white"
-                      : "bg-slate-100 text-slate-700"
+            <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-2">
+              {[0, 1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={`h-2 w-2 rounded-full ${
+                    i === Math.min(images.length, 4) - 1 ? "bg-white" : "bg-[#B3B3B3]"
                   }`}
-                >
-                  {tag}
-                </button>
-              );
-            })}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            <Input
-              placeholder="직접 입력"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-            />
+          <div className="px-6 pb-5">
+            <div className="mt-4 flex items-center justify-center">
+
+              <button
+                type="button"
+                onClick={openFilePicker}
+                disabled={images.length >= 4}
+                className={`rounded-[10px] px-4 py-2 text-[14px] font-bold
+                  ${
+                    images.length >= 4
+                      ? "bg-white/50 text-[#9E9E9E]"
+                      : "bg-white/70 text-[#1A1A1A]"
+                  }`}
+              >
+                사진 추가
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* 폼 */}
+        <section className="px-6 pt-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="relative z-20">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryMenu((p) => !p);
+                  setShowSchoolMenu(false);
+                }}
+                className="inline-flex items-center gap-2 rounded-[14px] bg-[#F2F2F2] px-4 py-2 text-[16px] font-bold text-[#4F4F4F]"
+              >
+                {category}
+                <ChevronDown className="h-4 w-4 text-[#9E9E9E]" />
+              </button>
+
+              {showCategoryMenu && (
+                <div className="absolute left-0 top-12 w-40 rounded-2xl bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.17)]">
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setCategory(c);
+                        setShowCategoryMenu(false);
+                      }}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-[14px] text-[#1A1A1A] hover:bg-slate-100"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[14px] text-[#4F4F4F]">점검 필요</span>
+              <button
+                type="button"
+                onClick={() => setNeedsCheck((p) => !p)}
+                className={`h-7 w-12 rounded-full p-1 transition ${
+                  needsCheck ? "bg-[#0EBC81]" : "bg-[#D1D6DB]"
+                }`}
+              >
+                <div
+                  className={`h-5 w-5 rounded-full bg-white transition ${
+                    needsCheck ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          <input
+            className="w-full rounded-[14px] border border-[#E0E0E0] px-5 py-4 text-[18px] font-bold text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+            placeholder="상품명"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+
+          <div className="relative z-20">
             <button
               type="button"
-              onClick={handleAddTag}
-              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+              onClick={() => {
+                setShowSchoolMenu((p) => !p);
+                setShowCategoryMenu(false);
+              }}
+              className="flex w-full items-center justify-between rounded-[14px] border border-[#E0E0E0] px-5 py-4 text-left text-[14px] text-[#1A1A1A]"
             >
-              <Plus className="h-4 w-4" />
+              <span className={school ? "text-[#1A1A1A]" : "text-[#D1D6DB]"}>
+                {school || "학교/위치를 선택해주세요"}
+              </span>
+              <ChevronDown className="h-4 w-4 text-[#9E9E9E]" />
             </button>
-          </div>
-        </section>
 
-        {/* 거래 옵션 */}
-        <section className="mt-2 space-y-4">
-          <p className="text-xs font-semibold text-slate-900">거래 옵션</p>
-
-          {/* 판매 */}
-          <div className="space-y-3">
-            <ToggleRow
-              label="판매"
-              description="물품을 판매합니다"
-              checked={sellEnabled}
-              onChange={setSellEnabled}
-            />
-            {sellEnabled && (
-              <div className="px-3">
-                <Label>판매 가격</Label>
-                <Input type="number" className="mt-1" defaultValue={0} />
+            {showSchoolMenu && (
+              <div className="absolute left-0 right-0 top-[56px] rounded-2xl bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.17)]">
+                {SCHOOL_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setSchool(s);
+                      setShowSchoolMenu(false);
+                    }}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-[14px] text-[#1A1A1A] hover:bg-slate-100"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* 대여 */}
-          <div className="space-y-3">
-            <ToggleRow
-              label="대여"
-              description="물품을 대여합니다"
-              checked={rentEnabled}
-              onChange={setRentEnabled}
-            />
-            {rentEnabled && (
-              <div className="px-3">
-                <Label>일일 대여료</Label>
-                <Input type="number" className="mt-1" defaultValue={0} />
-              </div>
-            )}
-          </div>
-        </section>
+          <input
+            className="w-full rounded-[14px] border border-[#E0E0E0] px-5 py-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+            placeholder="태그 · 태그 · 태그"
+            value={tagsText}
+            onChange={(e) => setTagsText(e.target.value)}
+          />
 
-        <button className="mb-6 mt-2 w-full rounded-full bg-emerald-500 py-2.5 text-sm font-semibold text-white">
-          등록하기
-        </button>
+          <input
+            className="w-full rounded-[14px] border border-[#E0E0E0] px-5 py-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+            placeholder="크기 (예: 가로 120cm × 세로 60cm)"
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+          />
+
+          <input
+            className="w-full rounded-[14px] border border-[#E0E0E0] px-5 py-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+            placeholder="상태 (예: 양호 / 보통 / 사용감 있음)"
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+          />
+
+          <textarea
+            className="h-[160px] w-full rounded-[18px] border border-[#E0E0E0] px-5 py-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+            placeholder="상품 설명을 적어주세요"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 rounded-[14px] border border-[#E0E0E0] px-5 py-4">
+              <input
+                className="w-full text-[16px] font-bold text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+                placeholder="가격"
+                value={price}
+                onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
+              />
+              <span className="text-[16px] font-bold text-[#1A1A1A]">원</span>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-[14px] border border-[#E0E0E0] px-5 py-4">
+              <input
+                className="w-full text-[16px] font-bold text-[#1A1A1A] outline-none placeholder:text-[#D1D6DB]"
+                placeholder="일일 대여료"
+                value={dailyRentPrice}
+                onChange={(e) => setDailyRentPrice(e.target.value.replace(/[^\d]/g, ""))}
+              />
+              <span className="text-[16px] font-bold text-[#1A1A1A]">원</span>
+            </div>
+          </div>
+
+          <div className="h-10" />
+        </section>
       </main>
-    </div>
-  );
-}
 
-/* ------- 아래 공통 컴포넌트들은 그대로 사용 ------- */
-
-function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-medium text-slate-700">{children}</p>;
-}
-
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-function Input(props: InputProps) {
-  return (
-    <input
-      {...props}
-      className={`w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400 ${props.className ?? ""}`}
-    />
-  );
-}
-
-type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
-
-function Textarea(props: TextareaProps) {
-  return (
-    <textarea
-      {...props}
-      rows={4}
-      className={`w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400 ${props.className ?? ""}`}
-    />
-  );
-}
-
-type DropdownProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  placeholder: string;
-  value: string | null;
-  options: string[];
-  onSelect: (value: string) => void;
-};
-
-function Dropdown({
-  open,
-  onOpenChange,
-  placeholder,
-  value,
-  options,
-  onSelect,
-}: DropdownProps) {
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700"
-      >
-        <span className={value ? "" : "text-slate-400"}>
-          {value ?? placeholder}
-        </span>
-        <ChevronDown className="h-4 w-4 text-slate-400" />
-      </button>
-
-      {open && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white text-sm shadow-lg">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => onSelect(opt)}
-              className={`flex w-full items-center px-3 py-2 text-left ${
-                value === opt
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-type ToggleRowProps = {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-};
-
-function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
-  return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <div>
-        <p className="text-sm font-medium text-slate-900">{label}</p>
-        <p className="text-[11px] text-slate-400">{description}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full transition-colors ${
-          checked ? "bg-emerald-500" : "bg-slate-300"
-        }`}
-      >
-        <span
-          className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? "translate-x-5" : "translate-x-0"
-          }`}
+      {(showCategoryMenu || showSchoolMenu) && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowCategoryMenu(false);
+            setShowSchoolMenu(false);
+          }}
+          className="fixed inset-0 z-10 cursor-default"
+          aria-label="close-menus"
         />
-      </button>
+      )}
     </div>
   );
 }

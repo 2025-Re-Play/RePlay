@@ -14,26 +14,89 @@ import CommunityScreen from "@/app/screens/CommunityScreen";
 import CommunityWriteScreen from "@/app/screens/CommunityWriteScreen";
 import MyPageScreen from "@/app/screens/MyPageScreen";
 import PerformanceCalendarScreen from "@/app/screens/PerformanceCalendarScreen";
+import ItemDetailScreen, { TradeItem } from "@/app/screens/ItemDetailScreen";
+
+type HomeRecentItem = TradeItem & {
+  image?: string; // public 경로로 네가 저장
+  description?: string;
+  createdAt?: string;
+};
+
+type UpcomingPerformance = {
+  id: number;
+  title: string;
+  dateText: string; // 디자인 안 바꾸려고 그냥 문자열로
+  placeText: string;
+};
+
+const HOME_RECENT_ITEMS: HomeRecentItem[] = [
+  {
+    id: 9001,
+    category: "가구",
+    title: "원목 책상",
+    school: "연세대학교",
+    tags: ["빈티지", "학교", "현대"],
+    price: "70,000원",
+    image: "/items/item-1.png",
+    description: "동아리방에서 사용하던 원목 책상입니다.",
+    createdAt: "2025.03.12",
+  },
+  {
+    id: 9002,
+    category: "소품",
+    title: "빈티지 서류 가방",
+    school: "연세대학교",
+    tags: ["빈티지", "현대극", "리얼리즘"],
+    price: "30,000원",
+    image: "/items/item-3.png",
+    description: "현대극 공연에서 사용했던 서류 가방입니다.",
+    createdAt: "2025.03.15",
+  },
+  {
+    id: 9003,
+    category: "조명",
+    title: "무대용 스탠드 조명",
+    school: "연세대학교",
+    tags: ["공포", "현대", "전등"],
+    price: "60,000원",
+    image: "/items/item-5.png",
+    description: "조도 조절 가능한 스탠드 조명입니다.",
+    createdAt: "2025.03.05",
+  },
+];
+
+const UPCOMING_PERFORMANCES: UpcomingPerformance[] = [
+  { id: 5001, title: "우리들의 여름", dateText: "2025.02.15-02.17", placeText: "연세대학교 학생회관 대강당" },
+  { id: 5002, title: "햄릿: 변주", dateText: "2025.03.01-03.03", placeText: "대학로 소극장 예그린" },
+  { id: 5003, title: "웃음의 기술", dateText: "2025.03.22-03.23", placeText: "부산문화회관 소극장" },
+];
 
 export default function HomeScreen() {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as BottomTabKey) ?? "home";
 
   const [activeTab, setActiveTab] = useState<BottomTabKey>(initialTab);
+
   const [showItemForm, setShowItemForm] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
   const [headerHidden, setHeaderHidden] = useState(false);
 
+  // ✅ 홈 최근 등록 물품 상세
+  const [homeSelectedItem, setHomeSelectedItem] = useState<HomeRecentItem | null>(null);
+
+  /* ---------------- 탭 변경 ---------------- */
   const handleTabChange = (tab: BottomTabKey) => {
     setActiveTab(tab);
     setShowItemForm(false);
     setShowPostForm(false);
     setShowCalendar(false);
+    setHomeSelectedItem(null);
     setHeaderHidden(false);
   };
 
+  /* ---------------- 헤더 타이틀 ---------------- */
   const headerTitle =
     activeTab === "trade"
       ? "거래"
@@ -47,50 +110,117 @@ export default function HomeScreen() {
 
   return (
     <div className="flex h-full w-full flex-col bg-slate-50">
-      {/* 상단 헤더 */}
+      {/* ✅ App Header */}
       <AppHeader
         title={headerTitle}
-        showLogo={!showItemForm && !showPostForm && !showCalendar}
-        hidden={headerHidden}
+        showLogo={!showItemForm && !showPostForm && !showCalendar && !homeSelectedItem}
+        hidden={headerHidden || showCalendar || !!homeSelectedItem} // ✅ 홈 상세도 숨김
       />
 
-      {/* 가운데 영역 */}
+      {/* =================== 메인 영역 =================== */}
       <main className="flex-1 overflow-hidden bg-slate-50">
         {showItemForm ? (
-          <ItemNewScreen onBack={() => setShowItemForm(false)} />
+          <ItemNewScreen
+            onBack={() => {
+              setShowItemForm(false);
+              setHeaderHidden(false);
+            }}
+            onHeaderHiddenChange={setHeaderHidden}
+          />
         ) : showPostForm ? (
           <CommunityWriteScreen onBack={() => setShowPostForm(false)} />
         ) : showCalendar ? (
-          <PerformanceCalendarScreen />
+          <PerformanceCalendarScreen
+            onBack={() => {
+              setShowCalendar(false);
+              setHeaderHidden(false);
+            }}
+          />
+        ) : homeSelectedItem ? (
+          <ItemDetailScreen
+            item={homeSelectedItem}
+            onBack={() => {
+              setHomeSelectedItem(null);
+              setHeaderHidden(false);
+            }}
+          />
         ) : (
           <>
-            {activeTab === "home" && <HomeTab />}
+            {activeTab === "home" && (
+              <HomeTab
+                recentItems={HOME_RECENT_ITEMS}
+                upcoming={UPCOMING_PERFORMANCES}
+                onClickRegister={() => {
+                  setHeaderHidden(true);
+                  setShowItemForm(true);
+                }}
+                onClickRecentArrow={() => {
+                  setActiveTab("manage");
+                  setShowItemForm(false);
+                  setShowPostForm(false);
+                  setShowCalendar(false);
+                  setHomeSelectedItem(null);
+                  setHeaderHidden(false);
+                }}
+                onClickUpcomingArrow={() => {
+                  setHeaderHidden(true);
+                  setShowCalendar(true);
+                }}
+                onClickRecentItem={(item) => {
+                  setHeaderHidden(true);
+                  setHomeSelectedItem(item);
+                }}
+                onClickUpcomingItem={() => {
+                  setHeaderHidden(true);
+                  setShowCalendar(true);
+                }}
+                onSearchGoTrade={() => {
+                  setActiveTab("trade");
+                  setShowItemForm(false);
+                  setShowPostForm(false);
+                  setShowCalendar(false);
+                  setHomeSelectedItem(null);
+                  setHeaderHidden(false);
+                }}
+              />
+            )}
 
             {activeTab === "trade" && (
               <TradeScreen
-                onAddClick={() => setShowItemForm(true)}
-                onDetailModeChange={setHeaderHidden} // ✅ 상세 모드일 때 헤더 숨김
+                onAddClick={() => {
+                  setHeaderHidden(true);
+                  setShowItemForm(true);
+                }}
+                onDetailModeChange={setHeaderHidden}
               />
             )}
 
             {activeTab === "manage" && (
-              <ManageScreen onAddClick={() => setShowItemForm(true)} />
+              <ManageScreen
+                onAddClick={() => {
+                  setHeaderHidden(true);
+                  setShowItemForm(true);
+                }}
+                onDetailModeChange={setHeaderHidden}
+              />
             )}
 
             {activeTab === "community" && (
               <CommunityScreen
-                onAddClick={() => setShowPostForm(true)}
-                onCalendarClick={() => setShowCalendar(true)}
+                onCalendarClick={() => {
+                  setHeaderHidden(true);
+                  setShowCalendar(true);
+                }}
+                onHeaderHiddenChange={setHeaderHidden}
               />
             )}
 
-            {activeTab === "mypage" && (  <MyPageScreen onDetailModeChange={setHeaderHidden} />
-            )}
+            {activeTab === "mypage" && <MyPageScreen onDetailModeChange={setHeaderHidden} />}
           </>
         )}
       </main>
 
-      {/* 하단 네비 */}
+      {/* =================== 하단 네비 =================== */}
       <BottomNav
         active={showItemForm ? "manage" : showPostForm ? "community" : activeTab}
         onChange={handleTabChange}
@@ -99,35 +229,58 @@ export default function HomeScreen() {
   );
 }
 
-/* ----------------- 홈 탭 (메인 홈 화면) ----------------- */
+/* ===================================================== */
+/* ===================== 홈 탭 ========================== */
+/* ===================================================== */
 
-function HomeTab() {
+function HomeTab({
+  recentItems,
+  upcoming,
+  onClickRegister,
+  onClickRecentArrow,
+  onClickUpcomingArrow,
+  onClickRecentItem,
+  onClickUpcomingItem,
+  onSearchGoTrade,
+}: {
+  recentItems: HomeRecentItem[];
+  upcoming: UpcomingPerformance[];
+  onClickRegister: () => void;
+  onClickRecentArrow: () => void;
+  onClickUpcomingArrow: () => void;
+  onClickRecentItem: (item: HomeRecentItem) => void;
+  onClickUpcomingItem: (p: UpcomingPerformance) => void;
+  onSearchGoTrade: () => void;
+}) {
+  const [homeSearch, setHomeSearch] = useState("");
+
   return (
     <div className="no-scrollbar h-full space-y-6 overflow-y-auto px-4 pb-6 pt-2">
-      {/* 상단 큰 카드 */}
+      {/* 상단 카드 */}
       <section
         className="mt-2 rounded-3xl px-5 py-6
         bg-[linear-gradient(90deg,#DEF8EC_0%,#DEF8EC_98%,#FDFDFD_100%)]"
       >
-        <p className="text-[20px] font-bold text-[#1A1A1A]">
-          대학 공연의 모든 것
-        </p>
-        <p className="mt-2 text-[14px] text-[#9E9E9E]">
-          원하는 소품, 의상, 가구를 손쉽게 거래하세요
-        </p>
+        <p className="text-[20px] font-bold text-[#1A1A1A]">대학 공연의 모든 것</p>
+        <p className="mt-2 text-[14px] text-[#9E9E9E]">원하는 소품, 의상, 가구를 손쉽게 거래하세요</p>
 
-        {/* 검색창 + 카메라 버튼 */}
         <div className="mt-4 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-[14px] text-slate-500 shadow-sm">
+          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
             <Image src="/icons/search.svg" alt="검색" width={24} height={24} />
             <input
               className="h-9 w-full bg-transparent text-[14px] text-[#D1D6DB] outline-none"
               placeholder="어떤 소품을 찾으시나요?"
+              value={homeSearch}
+              onChange={(e) => setHomeSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSearchGoTrade();
+              }}
             />
           </div>
           <button
-            className="flex h-10 w-10 items-center justify-center rounded-[20px]
-                        bg-gradient-to-r from-white to-[#D9FFEE]"
+            className="flex h-10 w-10 items-center justify-center rounded-[20px] bg-gradient-to-r from-white to-[#D9FFEE]"
+            onClick={onSearchGoTrade}
+            type="button"
           >
             <Image src="/icons/camera.svg" alt="카메라" width={18} height={18} />
           </button>
@@ -136,65 +289,128 @@ function HomeTab() {
 
       {/* 두 번째 카드 */}
       <section className="rounded-[20px] bg-white px-5 py-6 shadow-sm">
-        <p className="text-center text-[16px] font-semibold text-[#4F4F4F]">
-          우리 동방에 뭐가 남았지?
-        </p>
-        <p className="mt-2 text-center text-[14px] text-[#9E9E9E]">
-          사용하지 않는 물품을 다른 연극부와 공유해요
-        </p>
-        <button className="mx-auto mt-4 block w-[124px] rounded-[12px] bg-[#0EBC81] py-2 text-[14px] text-white">
+        <p className="text-center text-[16px] font-semibold text-[#4F4F4F]">우리 동방에 뭐가 남았지?</p>
+        <p className="mt-2 text-center text-[14px] text-[#9E9E9E]">사용하지 않는 물품을 다른 연극부와 공유해요</p>
+        <button
+          type="button"
+          onClick={onClickRegister}
+          className="mx-auto mt-4 block w-[124px] rounded-[12px] bg-[#0EBC81] py-2 text-[14px] text-white"
+        >
           물품 등록하기
         </button>
       </section>
 
       {/* 최근 등록 물품 */}
       <section className="space-y-3">
-        <SectionHeaderWithArrow title="최근 등록 물품" />
+        <SectionHeaderWithArrow title="최근 등록 물품" onArrowClick={onClickRecentArrow} />
         <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
-          <ItemCard />
-          <ItemCard />
-          <ItemCard />
+          {recentItems.map((it) => (
+            <ItemCard
+              key={it.id}
+              category={it.category}
+              title={it.title}
+              image={it.image}
+              onClick={() => onClickRecentItem(it)}
+            />
+          ))}
         </div>
       </section>
 
       {/* 다가오는 공연 */}
       <section className="space-y-3">
-        <SectionHeaderWithArrow title="다가오는 공연" />
-        <p className="text-[11px] text-slate-500">
-          등록된 공연 일정이 없어요.
-        </p>
+        <SectionHeaderWithArrow title="다가오는 공연" onArrowClick={onClickUpcomingArrow} />
+
+        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+          {upcoming.map((p) => (
+            <PerformanceCard
+              key={p.id}
+              title={p.title}
+              dateText={p.dateText}
+              placeText={p.placeText}
+              onClick={() => onClickUpcomingItem(p)}
+            />
+          ))}
+        </div>
       </section>
     </div>
   );
 }
 
-/* ----------------- 홈 탭용 작은 컴포넌트들 ----------------- */
+/* ----------------- 작은 컴포넌트 ----------------- */
 
-type SectionHeaderWithArrowProps = {
+function SectionHeaderWithArrow({
+  title,
+  onArrowClick,
+}: {
   title: string;
-};
-
-function SectionHeaderWithArrow({ title }: SectionHeaderWithArrowProps) {
+  onArrowClick: () => void;
+}) {
   return (
     <div className="flex items-center justify-between">
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-      <button type="button">
+      <button type="button" onClick={onArrowClick}>
         <Image src="/icons/arrow-right.svg" alt="더보기" width={20} height={20} />
       </button>
     </div>
   );
 }
 
-function ItemCard() {
+function ItemCard({
+  category,
+  title,
+  image,
+  onClick,
+}: {
+  category: string;
+  title: string;
+  image?: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="flex min-w-[200px] items-center rounded-[12px] bg-white p-3 shadow-sm">
-      <div className="h-16 w-16 rounded-xl bg-slate-200" />
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-w-[250px] items-center rounded-[12px] bg-white p-3 shadow-sm"
+    >
+      <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-slate-200">
+        {image ? <Image src={image} alt={title} fill className="object-cover" /> : null}
+      </div>
       <div className="ml-3 flex flex-col gap-1">
         <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
-          가구
+          {category}
         </span>
-        <span className="text-[16px] text-[#4F4F4F]">물품명</span>
+        <span className="text-[16px] text-[#4F4F4F]">{title}</span>
       </div>
-    </div>
+    </button>
+  );
+}
+
+function PerformanceCard({
+  title,
+  dateText,
+  placeText,
+  onClick,
+}: {
+  title: string;
+  dateText: string;
+  placeText: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-w-[250px] items-center rounded-[12px] bg-white p-3 shadow-sm"
+    >
+      <div className="flex-1">
+        <p className="text-[16px] font-semibold text-[#4F4F4F]">{title}</p>
+        <p className="mt-1 text-[14px] text-[#9E9E9E]">
+          {dateText}
+        </p>
+        <p className="mt-1 text-[14px] text-[#9E9E9E]">
+          {placeText}
+        </p>
+      </div>
+    </button>
   );
 }

@@ -1,9 +1,16 @@
 class AppException(Exception):
-    def __init__(self, message="Application Error", code="APP_ERROR", status_code=400):
-        self.message = message
+    def __init__(self, code: str, message: str, status_code: int = 400):
         self.code = code
+        self.message = message
         self.status_code = status_code
 
+    @classmethod
+    def unauthorized(cls, message: str = "인증이 필요합니다."):
+        return cls(code="UNAUTHORIZED", message=message, status_code=401)
+
+    @classmethod
+    def forbidden(cls, message: str = "권한이 없습니다."):
+        return cls(code="FORBIDDEN", message=message, status_code=403)
 
 class NotFoundException(AppException):
     def __init__(self, message="Resource Not Found"):

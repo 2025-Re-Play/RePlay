@@ -2,23 +2,33 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies.auth import require_admin
+from app.schemas.common import ok
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.user_service import UserService
-from app.schemas.common import ok
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["인증"]
-)
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/signup", summary="회원가입")
+@router.post("/signup")
 def signup(data: UserCreate, db: Session = Depends(get_db)):
     user = UserService().signup(db, data)
     return ok(user)
 
 
-@router.post("/login", summary="로그인")
+@router.post("/login")
 def login(data: UserLogin, db: Session = Depends(get_db)):
-    token = UserService().login(db, data)
-    return ok({"access_token": token})
+    token = UserService().login(db, data.email, data.password)
+    return ok(token)
+
+
+@router.get("/admin-test")
+def admin_test(
+    current_user: UserResponse = Depends(require_admin),
+):
+    return ok({
+        "message": "관리자만 접근 가능",
+        "user_id": current_user.id,
+        "role": current_user.role,
+    })
+

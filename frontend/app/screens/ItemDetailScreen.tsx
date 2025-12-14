@@ -1,7 +1,8 @@
+// app/screens/ItemDetailScreen.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 
 export type TradeItem = {
@@ -11,40 +12,36 @@ export type TradeItem = {
   school: string;
   tags: string[];
   price: string;
+
+  // ✅ TradeScreen 더미데이터 확장 필드(선택)
+  image?: string; // "/trade/xxx.jpg"
+  location?: string; // "연세대학교", "혜화동" 등
+  createdAt?: string; // "2025.03.12"
+  description?: string; // 본문
 };
 
 type ItemDetailScreenProps = {
-    item: TradeItem;
+  item: TradeItem;
   onBack: () => void;
 };
 
-type Mode = "idle" | "renting" | "trading"; // 어떤 캘린더를 열었는지
+type Mode = "idle" | "renting" | "trading";
 type ProgressStatus = "none" | "in-progress";
 
-// 간단히 3월 한 달만 사용하는 달력 (1~31)
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-
-// 이미 예약된 날(대여용) 예시
 const RESERVED_DAYS = [2, 3, 12, 18, 22, 25];
 
 export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps) {
-  // 대여: 시작 / 끝 날짜
   const [rentStart, setRentStart] = useState<number | null>(null);
   const [rentEnd, setRentEnd] = useState<number | null>(null);
 
-  // 거래: 단일 날짜
   const [tradeDate, setTradeDate] = useState<number | null>(null);
 
-  // 어떤 캘린더가 열려있는지
   const [openMode, setOpenMode] = useState<Mode>("idle");
-
-  // 진행중 여부 (대여/거래 공통)
   const [progress, setProgress] = useState<ProgressStatus>("none");
 
-  // 상단 성공 팝업
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // 팝업 자동 숨김 타이머
   useEffect(() => {
     if (!showSuccess) return;
     const timer = setTimeout(() => setShowSuccess(false), 2000);
@@ -82,17 +79,15 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
     setShowSuccess(true);
   };
 
-  const isInRentRange = (day: number) => {
-    if (!rentStart || !rentEnd) return false;
-    return day >= rentStart && day <= rentEnd;
-  };
-
-  const isDisabled = (day: number) => RESERVED_DAYS.includes(day);
-
   const closeAll = () => {
     setOpenMode("idle");
     setShowSuccess(false);
   };
+
+  // ✅ 화면에 표시할 텍스트 정리
+  const metaLine = `${item.school}${item.createdAt ? ` · ${item.createdAt}` : ""}`;
+  const tagLine = item.tags?.length ? item.tags.join(" · ") : "";
+  const descText = item.description?.trim() ? item.description : "상품 설명이 없습니다.";
 
   return (
     <div className="relative flex h-full flex-col bg-white">
@@ -105,7 +100,10 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <span className="text-[14px]">물건명</span>
+
+        {/* ✅ 제목도 item.title로 */}
+        <span className="text-[14px]">{item.title}</span>
+
         <div className="w-8" />
       </header>
 
@@ -113,33 +111,46 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
       <main className="no-scrollbar flex-1 overflow-y-auto">
         {/* 이미지 영역 */}
         <section className="bg-slate-200">
-          <div className="h-64 w-full bg-slate-200" />
-          <div className="flex items-center justify-center gap-1 py-3">
-            <span className="h-2 w-2 rounded-full bg-slate-400" />
-            <span className="h-2 w-2 rounded-full bg-slate-300" />
-            <span className="h-2 w-2 rounded-full bg-slate-300" />
-            <span className="h-2 w-2 rounded-full bg-slate-300" />
+          {/* ✅ 회색 박스 안에 이미지 넣기 */}
+          <div className="relative h-65 w-full overflow-hidden bg-slate-200">
+            {item.image ? (
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : null}
           </div>
         </section>
 
         {/* 정보 영역 */}
         <section className="px-6 pb-32 pt-4">
+          {/* ✅ 카테고리 */}
           <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
-            가구
+            {item.category}
           </span>
 
-          <h1 className="mt-3 text-[22px] text-[#1A1A1A]">상품명</h1>
+          {/* ✅ 상품명 */}
+          <h1 className="mt-3 text-[22px] text-[#1A1A1A]">{item.title}</h1>
 
-          <p className="mt-2 text-sm text-[#A7A7A7]">
-            연세대학교 · 26.03.31
-          </p>
+          {/* ✅ 학교/등록일 */}
+          <p className="mt-2 text-sm text-[#A7A7A7]">{metaLine}</p>
 
-          <p className="mt-1 text-[14px] text-[#A7A7A7]">태그 · 태그 · 태그</p>
+          {/* ✅ 위치가 있으면 한 줄 더 */}
+          {item.location ? (
+            <p className="mt-1 text-sm text-[#A7A7A7]">위치 · {item.location}</p>
+          ) : null}
 
-          <p className="mt-6 text-[16px] leading-relaxed text-[#1A1A1A]">
-            상품 설명 글 상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품
-            설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글
-            상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글상품 설명 글
+          {/* ✅ 태그 */}
+          {tagLine ? (
+            <p className="mt-1 text-[14px] text-[#A7A7A7]">{tagLine}</p>
+          ) : null}
+
+          {/* ✅ 설명 */}
+          <p className="mt-6 whitespace-pre-line text-[16px] leading-relaxed text-[#1A1A1A]">
+            {descText}
           </p>
         </section>
       </main>
@@ -147,8 +158,9 @@ export default function ItemDetailScreen({ item, onBack }: ItemDetailScreenProps
       {/* 하단 가격 + 버튼 영역 */}
       <div className="fixed bottom-16 left-0 right-0 border-t border-slate-100 bg-white px-6 pb-4 pt-3">
         <div className="mb-3 flex items-center justify-between">
+          {/* ✅ 가격 */}
           <span className="ml-auto text-lg font-semibold text-slate-900">
-            331,331원
+            {item.price}
           </span>
         </div>
 
@@ -290,12 +302,10 @@ function CalendarGrid({
   selectedEnd,
   disabledDays,
 }: CalendarGridProps) {
-  // 요일 헤더
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
     <div className="mt-4">
-      {/* 요일 */}
       <div className="mb-2 grid grid-cols-7 text-center text-xs text-slate-400">
         {weekDays.map((d) => (
           <span key={d}>{d}</span>
@@ -308,6 +318,7 @@ function CalendarGrid({
 
           const isSelectedStart = selectedStart === day;
           const isSelectedEnd = mode === "range" && selectedEnd === day;
+
           const inRange =
             mode === "range" &&
             selectedStart != null &&

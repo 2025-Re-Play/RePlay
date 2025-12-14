@@ -59,8 +59,6 @@ app.add_middleware(
 # HTTP + WebSocket 라우터 등록
 app.include_router(api_router)          # /api/v1/...
 app.include_router(realtime.router)     # /ws/...
-app.include_router(auth.router, prefix="/api/v1")
-
 @app.on_event("startup")
 def on_startup():
     init_test_model()

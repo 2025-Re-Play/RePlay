@@ -1,0 +1,24 @@
+name: Sync to forked repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push main to fork
+        run: |
+          git config user.name "${{ vars.GIT_USER_NAME }}"
+          git config user.email "${{ vars.GIT_USER_EMAIL }}"
+          git remote add forked https://x-access-token:${{ secrets.FORKED_REPO_TOKEN }}@github.com/${{ vars.FORK_OWNER }}/${{ vars.FORK_REPO }}.git
+          git push -f forked main

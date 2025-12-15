@@ -43,3 +43,8 @@ class InventoryItem(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     club: Mapped["Club"] = relationship("Club", back_populates="inventory_items")
+
+    trade_listing: Mapped["TradeListing | None"] = relationship(
+        back_populates="inventory_item",
+        uselist=False,
+    )

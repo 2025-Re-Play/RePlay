@@ -25,3 +25,9 @@ class Club(Base):
         secondary="club_admins",
         back_populates="managed_clubs",
         )
+    
+    inventory_items: Mapped[list["InventoryItem"]] = relationship(
+        "InventoryItem",
+        back_populates="club",
+        cascade="all, delete-orphan",
+    )

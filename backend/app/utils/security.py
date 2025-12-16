@@ -3,43 +3,50 @@ from typing import Dict, Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from passlib.exc import MissingBackendError
 from pydantic import BaseModel
 
 from app.config import settings
 
 
 # --------------------------------------------------------------------
-# 1. 비밀번호 해시/검증
+# 1. 비밀번호 해시/검증 (argon2)
 # --------------------------------------------------------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# argon2-cffi 패키지가 설치되어 있어야 동작함
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
     """
-    평문 비밀번호를 bcrypt 해시로 변환합니다.
-    이후 DB에는 이 해시 문자열만 저장합니다.
+    평문 비밀번호를 argon2 해시로 변환합니다.
     """
-    return pwd_context.hash(password)
+    try:
+        return pwd_context.hash(password)
+    except MissingBackendError as exc:
+        # argon2 backend를 못 찾는 경우 (배포 환경 설치/의존성 문제)
+        raise RuntimeError(
+            "argon2 backend is not available. "
+            "Install 'argon2-cffi' and redeploy."
+        ) from exc
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     입력된 평문 비밀번호와 DB에 저장된 해시가 일치하는지 검증합니다.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except MissingBackendError as exc:
+        raise RuntimeError(
+            "argon2 backend is not available. "
+            "Install 'argon2-cffi' and redeploy."
+        ) from exc
 
 
 # --------------------------------------------------------------------
 # 2. JWT 토큰 페이로드 정의
 # --------------------------------------------------------------------
 class TokenPayload(BaseModel):
-    """
-    Access Token에 담길 기본 페이로드 구조입니다.
-
-    - sub: 사용자 ID
-    - role: 사용자 역할 (예: "ADMIN", "USER")
-    - exp: 만료 시간 (Unix timestamp) - jose 라이브러리가 내부에서 사용
-    """
     sub: int
     role: str
     exp: int
@@ -55,15 +62,6 @@ def create_access_token(
     data: Dict,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    """
-    주어진 데이터(dict)를 기반으로 Access Token을 발급합니다.
-
-    data 예시:
-    {
-        "sub": user_id,
-        "role": "ADMIN" 또는 "USER"
-    }
-    """
     to_encode = data.copy()
     if "sub" in to_encode:
         to_encode["sub"] = str(to_encode["sub"])
@@ -74,29 +72,20 @@ def create_access_token(
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
 
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         to_encode,
         settings.SECRET_KEY,
         algorithm=ALGORITHM,
     )
-    return encoded_jwt
 
 
 def decode_token(token: str) -> TokenPayload:
-    """
-    JWT 문자열을 디코딩하여 TokenPayload로 반환합니다.
-    검증 실패 시 JWTError 예외가 발생하며,
-    상위 레벨에서 AppException 등으로 변환해 사용할 수 있습니다.
-    """
     try:
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=[ALGORITHM],
         )
-        token_data = TokenPayload(**payload)
-        return token_data
+        return TokenPayload(**payload)
     except JWTError as exc:
-        # 이 단계에서는 라이브러리 예외만 던지고,
-        # 실제 API 레벨에서는 AppException으로 감싸서 공통 에러 포맷으로 응답하도록 처리 예정입니다.
         raise exc

@@ -21,8 +21,7 @@ import NeedLoginModal from "@/app/components/NeedLoginModal";
 import LoginScreen from "@/app/screens/LoginScreen";
 import SignupRoleScreen from "@/app/screens/SignupRoleScreen";
 import SignupFormScreen from "@/app/screens/SignupFormScreen";
-
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/app/auth";
 
 type HomeRecentItem = TradeItem & {
   image?: string;

@@ -2,12 +2,11 @@
 
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/app/auth";
 
 export default function SignupRoleScreen() {
   const { signupRole, setSignupRole, openSignupForm, goBackAuth } = useAuth();
 
-  // ✅ 네가 준비할 svg 파일들 (원하는 파일명으로 바꿔도 됨)
   const ADMIN_ICON_OFF = "/signup/admin-off.svg";
   const ADMIN_ICON_ON = "/signup/admin-on.svg";
   const USER_ICON_OFF = "/signup/user-off.svg";

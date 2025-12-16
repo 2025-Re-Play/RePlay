@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAuth } from "@/app/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { ChevronLeft } from "lucide-react";
 
 type School = { id: number; name: string };

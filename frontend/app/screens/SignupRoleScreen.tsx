@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
-import { useAuth } from "@/app/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 export default function SignupRoleScreen() {
   const { signupRole, setSignupRole, openSignupForm, goBackAuth } = useAuth();

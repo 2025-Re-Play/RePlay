@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/app/lib/auth";
+import { AuthProvider } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "리플레이",

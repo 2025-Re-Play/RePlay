@@ -1,9 +1,8 @@
-// app/screens/LoginScreen.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/app/auth";
 
 export default function LoginScreen() {
   const { login, openSignupRole } = useAuth();

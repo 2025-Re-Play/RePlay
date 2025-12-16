@@ -22,7 +22,7 @@ import LoginScreen from "@/app/screens/LoginScreen";
 import SignupRoleScreen from "@/app/screens/SignupRoleScreen";
 import SignupFormScreen from "@/app/screens/SignupFormScreen";
 
-import { useAuth } from "@/app/lib/auth";
+import { useAuth } from "@/lib/auth";
 
 type HomeRecentItem = TradeItem & {
   image?: string;

@@ -1,21 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/auth";
 import { ChevronLeft } from "lucide-react";
 
-type School = { id: number; name: string };
-type Club = { id: number; name: string };
+type School = { id: number; name: string; region: string; code: string };
+type Club = {
+  id: number;
+  school_id: number;
+  name: string;
+  description: string;
+  genre: string;
+};
 
-const SCHOOL_DUMMY: School[] = [
-  { id: 1, name: "연세대학교 신촌" },
-  { id: 2, name: "연세대학교 원주" },
-];
+type Paginated<T> = {
+  success: boolean;
+  data: { items: T[] };
+  error?: { code: string; message: string };
+};
 
-const CLUB_DUMMY: Club[] = [
-  { id: 10, name: "동아리명1" },
-  { id: 11, name: "동아리명2" },
-];
+async function getJson<T>(path: string): Promise<T> {
+  // ✅ rewrites 타게 "상대경로 /api..."로만 호출
+  const res = await fetch(path, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+
+  const text = await res.text();
+
+  if (!res.ok) {
+    console.error("[API ERROR]", path, res.status, text);
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // 응답이 JSON이 아니면 그냥 문자열
+    return text as unknown as T;
+  }
+}
 
 export default function SignupFormScreen() {
   const { signupRole, signup, goBackAuth } = useAuth();
@@ -32,24 +57,94 @@ export default function SignupFormScreen() {
   const [schoolId, setSchoolId] = useState<number | null>(null);
   const [clubId, setClubId] = useState<number | null>(null);
 
-  // ✅ 리스트 열림/닫힘 상태
   const [schoolOpen, setSchoolOpen] = useState(false);
   const [clubOpen, setClubOpen] = useState(false);
+
+  const [schools, setSchools] = useState<School[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
 
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const schoolList = useMemo(() => {
-    const q = schoolQuery.trim();
-    if (!q) return SCHOOL_DUMMY;
-    return SCHOOL_DUMMY.filter((s) => s.name.includes(q));
+  const [schoolLoading, setSchoolLoading] = useState(false);
+  const [clubLoading, setClubLoading] = useState(false);
+
+  // 학교 목록: GET /api/v1/schools
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      setSchoolLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", "1");
+        params.set("size", "100");
+        if (schoolQuery.trim()) params.set("keyword", schoolQuery.trim());
+
+        // ✅ rewrites: /api -> railway/api
+        const json = await getJson<Paginated<School>>(
+          `/api/v1/schools?${params.toString()}`
+        );
+
+        if (!alive) return;
+        setSchools(json?.data?.items ?? []);
+      } catch {
+        if (!alive) return;
+        setErr("학교 목록을 불러오지 못했습니다.");
+        setSchools([]);
+      } finally {
+        if (!alive) return;
+        setSchoolLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      alive = false;
+    };
   }, [schoolQuery]);
 
-  const clubList = useMemo(() => {
-    const q = clubQuery.trim();
-    if (!q) return CLUB_DUMMY;
-    return CLUB_DUMMY.filter((c) => c.name.includes(q));
-  }, [clubQuery]);
+  // 동아리 목록: GET /api/v1/schools/{school_id}/clubs
+  useEffect(() => {
+    let alive = true;
+
+    if (schoolId === null) {
+      setClubs([]);
+      return;
+    }
+
+    const run = async () => {
+      setClubLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", "1");
+        params.set("size", "100");
+        if (clubQuery.trim()) params.set("keyword", clubQuery.trim());
+
+        const json = await getJson<Paginated<Club>>(
+          `/api/v1/schools/${schoolId}/clubs?${params.toString()}`
+        );
+
+        if (!alive) return;
+        setClubs(json?.data?.items ?? []);
+      } catch {
+        if (!alive) return;
+        setErr("동아리 목록을 불러오지 못했습니다.");
+        setClubs([]);
+      } finally {
+        if (!alive) return;
+        setClubLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [schoolId, clubQuery]);
+
+  const schoolList = useMemo(() => schools, [schools]);
+  const clubList = useMemo(() => clubs, [clubs]);
 
   const canSubmit =
     email.trim() &&
@@ -87,6 +182,7 @@ export default function SignupFormScreen() {
         type="button"
         onClick={goBackAuth}
         className="flex items-left mb-8 text-[14px] font-medium text-[#9E9E9E]"
+        aria-label="뒤로"
       >
         <ChevronLeft className="h-6 w-6 text-[#9E9E9E]" />
       </button>
@@ -95,7 +191,6 @@ export default function SignupFormScreen() {
         기본 정보를 작성해주세요
       </p>
 
-      {/* 이메일/비번/이름 */}
       <div className="mt-10 space-y-3">
         <input
           className="w-full rounded-[16px] border border-[#F2F2F2] px-5 py-4 text-[14px] outline-none"
@@ -118,7 +213,6 @@ export default function SignupFormScreen() {
         />
       </div>
 
-      {/* 관리자 코드 */}
       {signupRole === "ADMIN" ? (
         <div className="mt-3">
           <input
@@ -134,26 +228,24 @@ export default function SignupFormScreen() {
       <div className="mt-10">
         <input
           className="w-full rounded-[12px] border border-[#F2F2F2] px-6 py-4 text-[14px] text-[#4F4F4F] font-medium outline-none"
-          placeholder="학교명 검색"
+          placeholder={schoolLoading ? "학교 불러오는 중..." : "학교명 검색"}
           value={schoolQuery}
           onChange={(e) => {
+            setErr(null);
             setSchoolQuery(e.target.value);
             setSchoolId(null);
             setSchoolOpen(true);
-            // 학교 바꾸면 동아리도 초기화
+
             setClubId(null);
             setClubQuery("");
+            setClubs([]);
           }}
           onFocus={() => {
             if (schoolId === null) setSchoolOpen(true);
           }}
-          onBlur={() => {
-            // 리스트 버튼 클릭이 먼저 먹고 닫히도록 약간 딜레이
-            setTimeout(() => setSchoolOpen(false), 120);
-          }}
+          onBlur={() => setTimeout(() => setSchoolOpen(false), 120)}
         />
 
-        {/* ✅ focus 중 && 아직 선택 전일 때만 회색 리스트 보여줌 */}
         {schoolOpen && schoolId === null ? (
           <div className="mt-3 rounded-[12px] bg-[#F7F7F7] px-6 py-5">
             <div className="space-y-4">
@@ -164,15 +256,21 @@ export default function SignupFormScreen() {
                   onClick={() => {
                     setSchoolId(s.id);
                     setSchoolQuery(s.name);
-                    setSchoolOpen(false); // ✅ 선택하면 닫힘
-                    // 동아리 입력 가능해지게
+                    setSchoolOpen(false);
+
                     setClubOpen(true);
+                    setClubQuery("");
+                    setClubId(null);
                   }}
                   className="block w-full text-left text-[14px] font-medium text-[#4F4F4F]"
                 >
                   {s.name}
                 </button>
               ))}
+
+              {!schoolLoading && schoolList.length === 0 ? (
+                <p className="text-[13px] text-[#9E9E9E]">검색 결과가 없습니다.</p>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -182,9 +280,16 @@ export default function SignupFormScreen() {
       <div className="mt-6">
         <input
           className="w-full rounded-[12px] border border-[#F2F2F2] px-6 py-4 text-[14px] text-[#4F4F4F] font-medium outline-none"
-          placeholder="동아리 검색"
+          placeholder={
+            schoolId === null
+              ? "학교를 먼저 선택하세요"
+              : clubLoading
+              ? "동아리 불러오는 중..."
+              : "동아리 검색"
+          }
           value={clubQuery}
           onChange={(e) => {
+            setErr(null);
             setClubQuery(e.target.value);
             setClubId(null);
             if (schoolId !== null) setClubOpen(true);
@@ -192,13 +297,10 @@ export default function SignupFormScreen() {
           onFocus={() => {
             if (schoolId !== null && clubId === null) setClubOpen(true);
           }}
-          onBlur={() => {
-            setTimeout(() => setClubOpen(false), 120);
-          }}
+          onBlur={() => setTimeout(() => setClubOpen(false), 120)}
           disabled={schoolId === null}
         />
 
-        {/* ✅ focus 중 && 아직 선택 전일 때만 회색 리스트 */}
         {clubOpen && clubId === null && schoolId !== null ? (
           <div className="mt-3 rounded-[12px] bg-[#F7F7F7] px-6 py-5">
             <div className="space-y-4">
@@ -209,13 +311,17 @@ export default function SignupFormScreen() {
                   onClick={() => {
                     setClubId(c.id);
                     setClubQuery(c.name);
-                    setClubOpen(false); // ✅ 선택하면 닫힘
+                    setClubOpen(false);
                   }}
                   className="block w-full text-left text-[14px] font-medium text-[#4F4F4F]"
                 >
                   {c.name}
                 </button>
               ))}
+
+              {!clubLoading && clubList.length === 0 ? (
+                <p className="text-[13px] text-[#9E9E9E]">검색 결과가 없습니다.</p>
+              ) : null}
             </div>
           </div>
         ) : null}

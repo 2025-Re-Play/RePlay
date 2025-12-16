@@ -3,6 +3,7 @@ from typing import Dict, Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from passlib.exc import MissingBackendError
 from pydantic import BaseModel
 
 from app.config import settings
@@ -14,32 +15,60 @@ from app.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _ensure_password_length(password: str) -> None:
+    # bcrypt는 입력이 72 bytes 초과면 예외가 날 수 있음
+    if len(password.encode("utf-8")) > 72:
+        # 여기서는 ValueError로 두고, 서비스에서 ValidationException으로 변환하는 방식 유지
+        raise ValueError("Password exceeds bcrypt 72-byte limit")
+
+
 def hash_password(password: str) -> str:
     """
     평문 비밀번호를 bcrypt 해시로 변환합니다.
-    이후 DB에는 이 해시 문자열만 저장합니다.
     """
-    return pwd_context.hash(password)
+    _ensure_password_length(password)
+
+    try:
+        return pwd_context.hash(password)
+    except MissingBackendError as exc:
+        # passlib이 bcrypt backend를 못 찾는 경우 (배포 환경 설치/버전 문제)
+        raise RuntimeError(
+            "bcrypt backend is not available. "
+            "Check 'bcrypt' package compatibility with your Python version."
+        ) from exc
+    except AttributeError as exc:
+        # 네 로그의: AttributeError: module 'bcrypt' has no attribute '__about__'
+        # 이건 보통 bcrypt 패키지 버전/호환 문제로 발생
+        raise RuntimeError(
+            "bcrypt package appears incompatible (missing '__about__'). "
+            "Pin bcrypt to a compatible version or switch hashing algorithm."
+        ) from exc
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     입력된 평문 비밀번호와 DB에 저장된 해시가 일치하는지 검증합니다.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    _ensure_password_length(plain_password)
+
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except MissingBackendError as exc:
+        raise RuntimeError(
+            "bcrypt backend is not available. "
+            "Check 'bcrypt' package compatibility with your Python version."
+        ) from exc
+    except AttributeError as exc:
+        raise RuntimeError(
+            "bcrypt package appears incompatible (missing '__about__'). "
+            "Pin bcrypt to a compatible version or switch hashing algorithm."
+        ) from exc
 
 
 # --------------------------------------------------------------------
 # 2. JWT 토큰 페이로드 정의
 # --------------------------------------------------------------------
 class TokenPayload(BaseModel):
-    """
-    Access Token에 담길 기본 페이로드 구조입니다.
-
-    - sub: 사용자 ID
-    - role: 사용자 역할 (예: "ADMIN", "USER")
-    - exp: 만료 시간 (Unix timestamp) - jose 라이브러리가 내부에서 사용
-    """
     sub: int
     role: str
     exp: int
@@ -55,15 +84,6 @@ def create_access_token(
     data: Dict,
     expires_delta: Optional[timedelta] = None,
 ) -> str:
-    """
-    주어진 데이터(dict)를 기반으로 Access Token을 발급합니다.
-
-    data 예시:
-    {
-        "sub": user_id,
-        "role": "ADMIN" 또는 "USER"
-    }
-    """
     to_encode = data.copy()
     if "sub" in to_encode:
         to_encode["sub"] = str(to_encode["sub"])
@@ -74,29 +94,20 @@ def create_access_token(
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
 
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         to_encode,
         settings.SECRET_KEY,
         algorithm=ALGORITHM,
     )
-    return encoded_jwt
 
 
 def decode_token(token: str) -> TokenPayload:
-    """
-    JWT 문자열을 디코딩하여 TokenPayload로 반환합니다.
-    검증 실패 시 JWTError 예외가 발생하며,
-    상위 레벨에서 AppException 등으로 변환해 사용할 수 있습니다.
-    """
     try:
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=[ALGORITHM],
         )
-        token_data = TokenPayload(**payload)
-        return token_data
+        return TokenPayload(**payload)
     except JWTError as exc:
-        # 이 단계에서는 라이브러리 예외만 던지고,
-        # 실제 API 레벨에서는 AppException으로 감싸서 공통 에러 포맷으로 응답하도록 처리 예정입니다.
         raise exc

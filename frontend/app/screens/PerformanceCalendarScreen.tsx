@@ -146,9 +146,17 @@ export default function PerformanceCalendarScreen({
       <div className="flex h-14 items-center bg-white px-4">
         <button
           type="button"
-          onClick={() => {onBack}
-
-          }
+          onClick={() => {
+            if (view === "detail") {
+              setSelectedId(null);
+              setView("list");
+              return;
+            }
+            if (view === "create") {
+              setView("list");
+              return;
+            }
+          }}
           className="flex items-center gap-1"
         >
           <ChevronLeft className="h-5 w-5 text-[#A7A7A7]" />

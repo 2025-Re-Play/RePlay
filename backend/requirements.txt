@@ -5,7 +5,10 @@ SQLAlchemy>=2.0
 psycopg2-binary
 pymysql
 cryptography
-passlib[bcrypt]
+
+passlib
+argon2-cffi
+
 python-jose[cryptography]
 pydantic-settings
 email-validator

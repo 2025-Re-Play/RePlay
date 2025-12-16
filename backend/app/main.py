@@ -1,14 +1,18 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.config import settings
-from app.database import engine
 from app.api.v1.router import api_router
-from app.api.v1 import realtime, auth
+from app.api.v1 import realtime
 
 from app.schemas.common import fail, ok
 from app.utils.exceptions import AppException
 from fastapi.exceptions import HTTPException
+
+import sqlalchemy as sa
+from app.database import engine
+
 
 tags_metadata = [
     {
@@ -21,13 +25,15 @@ app = FastAPI(
     title="RePlay API",
     description="연극/영화 소품 중고거래 플랫폼 Re;Play 백엔드 API",
     version="0.1.0",
+    openapi_tags=tags_metadata,  
 )
+
 
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     return JSONResponse(
         status_code=exc.status_code,
-        content=fail(exc.code, exc.message).dict()
+        content=fail(exc.code, exc.message).dict(),
     )
 
 
@@ -35,8 +41,9 @@ async def app_exception_handler(request: Request, exc: AppException):
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content=fail("HTTP_ERROR", exc.detail).dict()
+        content=fail("HTTP_ERROR", exc.detail).dict(),
     )
+
 
 # CORS 설정
 LOCAL_ORIGINS = [
@@ -46,14 +53,11 @@ LOCAL_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-PROD_ORIGINS = [
-    # "https://replay-frontend.vercel.app",
-    # "https://replay-frontend-xxxx.up.railway.app",
-]
+PROD_ORIGINS = ["https://replay.vercel.app"]
 
 if getattr(settings, "ENV", "local") == "local":
     allow_origins = LOCAL_ORIGINS
-    allow_origin_regex = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"  # 포트 바뀌어도 OK
+    allow_origin_regex = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"
 else:
     allow_origins = PROD_ORIGINS
     allow_origin_regex = None
@@ -67,15 +71,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # HTTP + WebSocket 라우터 등록
-app.include_router(api_router)          # /api/v1/...
-app.include_router(realtime.router)     # /ws/...
+app.include_router(api_router)      # /api/v1/...
+app.include_router(realtime.router) # /ws/...
+
 
 @app.get(
     "/health",
     summary="헬스 체크",
-    description="기본 시스템 헬스 체크. TODO: DB 연결 상태 검사 추가 예정.",
-    tags=["시스템"],
+    description="기본 시스템 헬스 체크. 필요 시 DB 연결 상태 검사도 포함 가능.",
+    tags=["health"],
 )
 async def health():
-    return ok({"service": "RePlay"})
+    # 기본은 서비스 살아있음만 반환 (마이그레이션 깨져도 서버는 뜨게)
+    payload = {"service": "RePlay"}
+
+    return ok(payload)

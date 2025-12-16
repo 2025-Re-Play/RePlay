@@ -6,33 +6,29 @@ Create Date: 2025-12-16 01:34:00.326911
 
 """
 from typing import Sequence, Union
-from sqlalchemy.dialects import postgresql
+
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
-
-# revision identifiers, used by Alembic.
 revision: str = "a9296c4fdf77"
 down_revision: Union[str, Sequence[str], None] = "75b17e3dc042"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+branch_labels = None
+depends_on = None
 
 
 def upgrade() -> None:
-    # 1) Postgres enum 타입은 별도로 생성 (이미 있으면 스킵)
     bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
-        op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
-                CREATE TYPE userrole AS ENUM ('ADMIN', 'USER');
-            END IF;
-        END$$;
-        """)
 
-    # 2) 컬럼은 이미 존재하는 enum 타입을 "사용만" 하도록 create_type=False
-    role_enum = sa.Enum("ADMIN", "USER", name="userrole", create_type=False)
+    # 1) Postgres에서 enum 타입은 '있으면 스킵'으로 먼저 보장
+    if bind.dialect.name == "postgresql":
+        enum_create = postgresql.ENUM("ADMIN", "USER", name="userrole")
+        enum_create.create(bind, checkfirst=True)
+
+        role_enum = postgresql.ENUM("ADMIN", "USER", name="userrole", create_type=False)
+    else:
+        # MySQL 등에서는 sa.Enum 그대로 사용
+        role_enum = sa.Enum("ADMIN", "USER", name="userrole")
 
     op.create_table(
         "users",
@@ -54,6 +50,7 @@ def upgrade() -> None:
     op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
 
+
 def downgrade() -> None:
     op.drop_index(op.f("ix_users_email"), table_name="users")
     op.drop_index(op.f("ix_users_id"), table_name="users")
@@ -61,4 +58,5 @@ def downgrade() -> None:
 
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
+        # 타입을 다른 테이블이 쓰고 있을 가능성도 있으니 안전하게 IF EXISTS
         op.execute("DROP TYPE IF EXISTS userrole")

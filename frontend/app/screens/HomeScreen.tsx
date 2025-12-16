@@ -141,7 +141,7 @@ export default function HomeScreen() {
       <NotificationDrawer
         open={notiOpen}
         onClose={() => setNotiOpen(false)}
-        isLoggedIn={auth.isLoggedIn}
+        isLoggedIn={!!auth.token}
         onGoLogin={() => {
           setNotiOpen(false);
           auth.openLogin();

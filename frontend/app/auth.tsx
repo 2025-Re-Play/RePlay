@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo, useRef, useState } from "react";
-import { loginApi, signupApi, SignupReq } from "../lib/authApi";
+import { loginApi, signupApi, SignupReq } from "./authApi";
 
 type PendingAction = null | (() => void);
 type AuthScreen = "none" | "login" | "signupRole" | "signupForm";

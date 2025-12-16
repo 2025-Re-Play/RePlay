@@ -22,6 +22,8 @@ import LoginScreen from "@/app/screens/LoginScreen";
 import SignupRoleScreen from "@/app/screens/SignupRoleScreen";
 import SignupFormScreen from "@/app/screens/SignupFormScreen";
 
+import NotificationDrawer from "@/app/components/NotificationDrawer";
+
 import { useAuth } from "@/app/auth";
 
 type HomeRecentItem = TradeItem & {
@@ -82,7 +84,7 @@ const UPCOMING_PERFORMANCES: UpcomingPerformance[] = [
 export default function HomeScreen() {
   const auth = useAuth();
 
-  // ✅ 훅들은 return 이전에 전부 호출되어야 함
+  // ✅ 모든 훅은 return 이전에 호출
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as BottomTabKey) ?? "home";
 
@@ -97,19 +99,26 @@ export default function HomeScreen() {
   const [homeSelectedItem, setHomeSelectedItem] = useState<HomeRecentItem | null>(null);
   const [homeSelectedPerformance, setHomeSelectedPerformance] = useState<UpcomingPerformance | null>(null);
 
-  // ✅ auth 화면이면 헤더/네비 없이 auth 화면만 렌더
+  // ✅ 알림 드로어
+  const [notiOpen, setNotiOpen] = useState(false);
+
+  // ✅ auth 화면이면 헤더/네비 없이 auth 화면만
   if (auth.authScreen === "login") return <LoginScreen />;
   if (auth.authScreen === "signupRole") return <SignupRoleScreen />;
   if (auth.authScreen === "signupForm") return <SignupFormScreen />;
 
-  const handleTabChange = (tab: BottomTabKey) => {
-    setActiveTab(tab);
+  const resetToBase = () => {
     setShowItemForm(false);
     setShowPostForm(false);
     setShowCalendar(false);
     setHomeSelectedItem(null);
     setHomeSelectedPerformance(null);
     setHeaderHidden(false);
+  };
+
+  const handleTabChange = (tab: BottomTabKey) => {
+    setActiveTab(tab);
+    resetToBase();
   };
 
   const headerTitle =
@@ -125,17 +134,32 @@ export default function HomeScreen() {
 
   return (
     <div className="flex h-full w-full flex-col bg-slate-50">
-      {/* ✅ 로그인 필요 모달은 "한 번만" */}
-      <NeedLoginModal
-        open={auth.needLoginOpen}
-        onClose={auth.closeNeedLogin}
-        onGoLogin={auth.goLoginFromModal}
+      {/* ✅ requireLogin용 모달 */}
+      <NeedLoginModal open={auth.needLoginOpen} onClose={auth.closeNeedLogin} onGoLogin={auth.goLoginFromModal} />
+
+      {/* ✅ 알림 드로어 */}
+      <NotificationDrawer
+        open={notiOpen}
+        onClose={() => setNotiOpen(false)}
+        isLoggedIn={auth.isLoggedIn}
+        onGoLogin={() => {
+          setNotiOpen(false);
+          auth.openLogin();
+        }}
+        items={[
+          { id: 1, section: "물품 점검", text: "[물품명]을 등록한 지 n개월이 지났어요" },
+          { id: 2, section: "물품 점검", text: "[물품명]을 등록한 지 n개월이 지났어요" },
+          { id: 3, section: "게시판", text: "[글 제목]에 새로운 댓글이 달렸어요" },
+          { id: 4, section: "게시판", text: "[글 제목]에 새로운 댓글이 달렸어요" },
+          { id: 5, section: "대여 및 거래", text: "[물품명]을 거래하고 싶어해요" },
+        ]}
       />
 
       <AppHeader
         title={headerTitle}
         showLogo={!showItemForm && !showPostForm && !showCalendar && !homeSelectedItem && !homeSelectedPerformance}
         hidden={headerHidden || showCalendar || !!homeSelectedItem || !!homeSelectedPerformance}
+        onBellClick={() => setNotiOpen(true)}
       />
 
       <main className="flex-1 overflow-hidden bg-slate-50">
@@ -187,12 +211,7 @@ export default function HomeScreen() {
                 onClickRecentArrow={() => {
                   auth.requireLogin(() => {
                     setActiveTab("manage");
-                    setShowItemForm(false);
-                    setShowPostForm(false);
-                    setShowCalendar(false);
-                    setHomeSelectedItem(null);
-                    setHomeSelectedPerformance(null);
-                    setHeaderHidden(false);
+                    resetToBase();
                   });
                 }}
                 onClickUpcomingArrow={() => {
@@ -215,12 +234,7 @@ export default function HomeScreen() {
                 }}
                 onSearchGoTrade={() => {
                   setActiveTab("trade");
-                  setShowItemForm(false);
-                  setShowPostForm(false);
-                  setShowCalendar(false);
-                  setHomeSelectedItem(null);
-                  setHomeSelectedPerformance(null);
-                  setHeaderHidden(false);
+                  resetToBase();
                 }}
               />
             )}
@@ -296,10 +310,7 @@ function HomeTab({
 
   return (
     <div className="no-scrollbar h-full space-y-6 overflow-y-auto px-4 pb-6 pt-2">
-      <section
-        className="mt-2 rounded-3xl px-5 py-6
-        bg-[linear-gradient(90deg,#DEF8EC_0%,#DEF8EC_98%,#FDFDFD_100%)]"
-      >
+      <section className="mt-2 rounded-3xl px-5 py-6 bg-[linear-gradient(90deg,#DEF8EC_0%,#DEF8EC_98%,#FDFDFD_100%)]">
         <p className="text-[20px] font-bold text-[#1A1A1A]">대학 공연의 모든 것</p>
         <p className="mt-2 text-[14px] text-[#9E9E9E]">원하는 소품, 의상, 가구를 손쉽게 거래하세요</p>
 
@@ -387,9 +398,7 @@ function ItemCard({
         {image ? <Image src={image} alt={title} fill className="object-cover" /> : null}
       </div>
       <div className="ml-3 flex flex-col gap-1">
-        <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">
-          {category}
-        </span>
+        <span className="inline-flex w-fit rounded-[5px] bg-[#E7F8F2] px-2 py-0.5 text-[14px] font-bold text-[#0EBC81]">{category}</span>
         <span className="text-[16px] text-[#4F4F4F]">{title}</span>
       </div>
     </button>

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies.auth import require_admin
+from app.dependencies.auth import require_admin, get_current_user
 from app.schemas.common import ok
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services.user_service import UserService
@@ -22,6 +22,15 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     return ok(token)
 
 
+@router.post("/logout")
+def logout(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    return ok({
+        "message": "로그아웃 되었습니다."
+    })
+
+
 @router.get("/admin-test")
 def admin_test(
     current_user: UserResponse = Depends(require_admin),
@@ -31,4 +40,3 @@ def admin_test(
         "user_id": current_user.id,
         "role": current_user.role,
     })
-

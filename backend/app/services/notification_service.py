@@ -6,11 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.models.notification import NotificationType
 from app.repositories.notification_repository import NotificationRepository
-from app.utils.websocket_manager import WebSocketManager
 from app.schemas.notification import NotificationOut
-
-# 전역 WebSocket 매니저 (echo와 공유)
-ws_manager = WebSocketManager()
+from app.utils.ws import ws_manager
 
 
 class NotificationService:
@@ -23,8 +20,11 @@ class NotificationService:
         entity_id: Optional[int] = None,
         payload: Optional[str] = None,
     ):
-        # 1) DB 저장
-        n = NotificationRepository.create(
+        """
+        1) 알림 DB 저장
+        2) WebSocket 실시간 push (broadcast)
+        """
+        notification = NotificationRepository.create(
             db=db,
             recipient_user_id=user_id,
             type=type,
@@ -33,12 +33,11 @@ class NotificationService:
             payload=payload,
         )
 
-        # 2) WebSocket 실시간 푸시 (broadcast)
         await ws_manager.broadcast_json(
             {
                 "type": "NOTIFICATION",
-                "data": NotificationOut.model_validate(n).model_dump(),
+                "data": NotificationOut.model_validate(notification).model_dump(),
             }
         )
 
-        return n
+        return notification

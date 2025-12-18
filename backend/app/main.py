@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException
 
 from app.config import settings
 from app.api.v1.router import api_router
@@ -8,7 +9,6 @@ from app.api.v1 import realtime
 
 from app.schemas.common import fail, ok
 from app.utils.exceptions import AppException
-from fastapi.exceptions import HTTPException
 
 import sqlalchemy as sa
 from app.database import engine
@@ -25,7 +25,7 @@ app = FastAPI(
     title="RePlay API",
     description="연극/영화 소품 중고거래 플랫폼 Re;Play 백엔드 API",
     version="0.1.0",
-    openapi_tags=tags_metadata,  
+    openapi_tags=tags_metadata,
 )
 
 
@@ -45,7 +45,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-# CORS 설정
+# -----------------------------
+# CORS 설정 (OPTIONS 400 해결)
+# -----------------------------
 LOCAL_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -53,14 +55,14 @@ LOCAL_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-PROD_ORIGINS = ["https://replay.vercel.app"]
+PROD_ORIGINS = [
+    "https://replay.vercel.app",
+]
 
-if getattr(settings, "ENV", "local") == "local":
-    allow_origins = LOCAL_ORIGINS
-    allow_origin_regex = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"
-else:
-    allow_origins = PROD_ORIGINS
-    allow_origin_regex = None
+# prod(Railway)에서도 로컬 프론트로 테스트할 수 있게 local origin을 같이 허용
+allow_origins = LOCAL_ORIGINS + PROD_ORIGINS
+
+allow_origin_regex = r"^https://.*\.vercel\.app$"
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,22 +71,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
-
-# HTTP + WebSocket 라우터 등록
-app.include_router(api_router)      # /api/v1/...
-app.include_router(realtime.router) # /ws/...
-
-
-@app.get(
-    "/health",
-    summary="헬스 체크",
-    description="기본 시스템 헬스 체크. 필요 시 DB 연결 상태 검사도 포함 가능.",
-    tags=["health"],
-)
-async def health():
-    # 기본은 서비스 살아있음만 반환 (마이그레이션 깨져도 서버는 뜨게)
-    payload = {"service": "RePlay"}
-
-    return ok(payload)
+app.include_router(api_router)       # /api/v1/...
+app.include_router(realtime.router)  # /ws/...

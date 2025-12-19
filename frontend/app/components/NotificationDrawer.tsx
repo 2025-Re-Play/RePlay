@@ -13,7 +13,6 @@ export default function NotificationDrawer({
   onClose,
   items,
 
-  // ✅ 추가
   isLoggedIn,
   onGoLogin,
 }: {
@@ -21,11 +20,9 @@ export default function NotificationDrawer({
   onClose: () => void;
   items: Notification[];
 
-  // ✅ 추가
   isLoggedIn: boolean;
   onGoLogin: () => void;
 }) {
-  // ESC로 닫기
   useEffect(() => {
     if (!open) return;
 
@@ -42,15 +39,12 @@ export default function NotificationDrawer({
 
   return (
     <div className="fixed inset-0 z-[60]">
-      {/* 배경(클릭하면 닫힘) */}
       <button type="button" aria-label="알림 닫기" onClick={onClose} className="absolute inset-0" />
 
-      {/* 오른쪽 패널 */}
       <aside className="absolute right-0 top-20 h-[620px] w-[78%] max-w-[360px] bg-white shadow-xl">
         <div className="h-0" />
 
         <div className="px-6 pt-6">
-          {/* ✅ 로그인 안 했을 때 */}
           {!isLoggedIn ? (
             <div className="pt-2">
               <p className="flex items-center justify-center text-[16px] font-bold text-[#1A1A1A]">로그인 후 이용가능합니다.</p>
@@ -67,7 +61,6 @@ export default function NotificationDrawer({
               </button>
             </div>
           ) : (
-            /* ✅ 로그인 했을 때 기존 섹션 렌더 */
             <>
               {sections.map((sec) => {
                 const list = items.filter((x) => x.section === sec);

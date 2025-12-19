@@ -116,7 +116,6 @@ const mockPosts: Post[] = [
     images: [],
   },
 
-  // ---------------- 소품 요청 게시판 ----------------
   {
     id: 201,
     board: "소품 요청 게시판",
@@ -282,7 +281,6 @@ export default function CommunityScreen({
     setDraftTitle("");
     setDraftContent("");
 
-    // ✅ 이전에 고른 이미지 미리보기 해제 + 초기화
     setDraftImages((prev) => {
       prev.forEach((x) => URL.revokeObjectURL(x.previewUrl));
       return [];
@@ -292,7 +290,6 @@ export default function CommunityScreen({
   };
 
   const closeWrite = () => {
-    // ✅ 나갈 때도 revoke
     setDraftImages((prev) => {
       prev.forEach((x) => URL.revokeObjectURL(x.previewUrl));
       return [];
@@ -323,8 +320,6 @@ export default function CommunityScreen({
     setActiveBoard(draftBoard);
     setMode("list");
 
-    // ✅ 작성 후 파일상태 초기화(미리보기는 포스트에서 계속 쓰니까 revoke 하면 안 됨)
-    // 실제 업로드 붙이면 여기서 서버 URL로 바꾸고 revoke 해도 됨
     setDraftImages([]);
   };
 
@@ -361,7 +356,6 @@ export default function CommunityScreen({
     setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)));
   };
 
-  // ✅ 파일 선택 관련
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
@@ -394,7 +388,6 @@ export default function CommunityScreen({
     });
   };
 
-  // ------------------ DETAIL UI ------------------
   if (mode === "detail" && selectedPost) {
     return (
       <CommunityDetail
@@ -407,7 +400,6 @@ export default function CommunityScreen({
     );
   }
 
-  // ------------------ WRITE UI ------------------
   if (mode === "write") {
     return (
       <CommunityWrite
@@ -419,7 +411,6 @@ export default function CommunityScreen({
         onChangeTitle={setDraftTitle}
         onChangeContent={setDraftContent}
         onSubmit={submitWrite}
-        // ✅ 이미지 관련 props
         fileInputRef={fileInputRef}
         images={draftImages}
         onOpenFilePicker={openFilePicker}
@@ -429,7 +420,6 @@ export default function CommunityScreen({
     );
   }
 
-  // ------------------ LIST UI ------------------
   return (
     <div className="relative flex h-full flex-col bg-white">
       <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-24 pt-6 space-y-4">
@@ -495,15 +485,10 @@ export default function CommunityScreen({
   );
 }
 
-/* -------------------- 리스트 아이템 -------------------- */
 
 function PostRow({ post, onClick }: { post: Post; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="flex w-full items-center gap-4 text-left">
-      {/* 썸네일(있으면 첫 이미지, 없으면 회색) */}
-      <div className="relative h-[96px] w-[96px] overflow-hidden rounded-[20px] bg-[#D9D9D9]">
-        {post.images?.[0] ? <Image src={post.images[0]} alt="thumb" fill className="object-cover" unoptimized /> : null}
-      </div>
 
       <div className="flex-1">
         <p className="text-[16px] font-bold text-[#1A1A1A]">{post.title}</p>

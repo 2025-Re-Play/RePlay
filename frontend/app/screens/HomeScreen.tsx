@@ -153,11 +153,11 @@ export default function HomeScreen() {
           auth.openLogin();
         }}
         items={[
-          { id: 1, section: "물품 점검", text: "[물품명]을 등록한 지 n개월이 지났어요" },
-          { id: 2, section: "물품 점검", text: "[물품명]을 등록한 지 n개월이 지났어요" },
-          { id: 3, section: "게시판", text: "[글 제목]에 새로운 댓글이 달렸어요" },
-          { id: 4, section: "게시판", text: "[글 제목]에 새로운 댓글이 달렸어요" },
-          { id: 5, section: "대여 및 거래", text: "[물품명]을 거래하고 싶어해요" },
+          { id: 1, section: "물품 점검", text: "철제 캐비닛(그레이)을 등록한 지 8개월이 지났어요" },
+          { id: 2, section: "물품 점검", text: "무대용 스탠드 조명을 등록한 지 8개월이 지났어요" },
+          { id: 3, section: "게시판", text: "'단편영화 촬영용 ...'에 새로운 댓글이 달렸어요" },
+          { id: 4, section: "게시판", text: "'학교 배경 ...'에 새로운 댓글이 달렸어요" },
+          { id: 5, section: "대여 및 거래", text: "원목 소형 식탁을 거래하고 싶어해요" },
         ]}
       />
 

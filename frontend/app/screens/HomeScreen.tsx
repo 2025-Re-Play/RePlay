@@ -118,6 +118,20 @@ export default function HomeScreen() {
   };
 
   const handleTabChange = (tab: BottomTabKey) => {
+    if (tab === "mypage") {
+    auth.requireLogin(() => {
+      if (tab === activeTab) {
+        setTabNonce((n) => n + 1);
+        resetToBase();
+        return;
+      }
+      setActiveTab(tab);
+      setTabNonce((n) => n + 1);
+      resetToBase();
+    });
+    return;
+  }
+    
     if (tab === activeTab) {
       setTabNonce((n) => n + 1);
       resetToBase();
@@ -285,7 +299,11 @@ export default function HomeScreen() {
               />
             )}
 
-            {activeTab === "mypage" && <MyPageScreen tabNonce={tabNonce} onDetailModeChange={setHeaderHidden} />}
+            {activeTab === "mypage" && (
+              auth.isLoggedIn ? (
+                <MyPageScreen tabNonce={tabNonce} onDetailModeChange={setHeaderHidden} />
+              ) : null
+            )}
           </>
         )}
       </main>

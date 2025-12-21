@@ -7,7 +7,7 @@ from app.config import settings
 from app.api.v1.router import api_router
 from app.api.v1 import realtime
 
-from app.schemas.common import fail, ok
+from app.schemas.common import fail
 from app.utils.exceptions import AppException
 
 import sqlalchemy as sa
@@ -29,6 +29,9 @@ app = FastAPI(
 )
 
 
+# -----------------------------
+# AppException 전역 처리
+# -----------------------------
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
     return JSONResponse(
@@ -37,6 +40,9 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
 
 
+# -----------------------------
+# HTTPException 전역 처리
+# -----------------------------
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -46,7 +52,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 # -----------------------------
-# CORS 설정 (OPTIONS 400 해결)
+# CORS 설정
 # -----------------------------
 LOCAL_ORIGINS = [
     "http://localhost:3000",
@@ -59,9 +65,7 @@ PROD_ORIGINS = [
     "https://replay.vercel.app",
 ]
 
-# prod(Railway)에서도 로컬 프론트로 테스트할 수 있게 local origin을 같이 허용
 allow_origins = LOCAL_ORIGINS + PROD_ORIGINS
-
 allow_origin_regex = r"^https://.*\.vercel\.app$"
 
 app.add_middleware(
@@ -74,5 +78,8 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-app.include_router(api_router)       # /api/v1/...
-app.include_router(realtime.router)  # /ws/...
+# -----------------------------
+# Router 등록
+# -----------------------------
+app.include_router(api_router)        # /api/v1/...
+app.include_router(realtime.router)   # /ws/...

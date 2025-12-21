@@ -12,7 +12,6 @@ import TradeScreen from "@/app/screens/TradeScreen";
 import ItemNewScreen from "@/app/screens/ItemNewScreen";
 import ManageScreen from "@/app/screens/ManageScreen";
 import CommunityScreen from "@/app/screens/CommunityScreen";
-import CommunityWriteScreen from "@/app/screens/CommunityWriteScreen";
 import MyPageScreen from "@/app/screens/MyPageScreen";
 import PerformanceCalendarScreen from "@/app/screens/PerformanceCalendarScreen";
 import ItemDetailScreen, { TradeItem } from "@/app/screens/ItemDetailScreen";
@@ -191,8 +190,6 @@ export default function HomeScreen() {
             }}
             onHeaderHiddenChange={setHeaderHidden}
           />
-        ) : showPostForm ? (
-          <CommunityWriteScreen onBack={() => setShowPostForm(false)} />
         ) : showCalendar ? (
           <PerformanceCalendarScreen
             onBack={() => {

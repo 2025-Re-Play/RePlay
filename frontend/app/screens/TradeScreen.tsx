@@ -142,12 +142,10 @@ export default function TradeScreen({
     onDetailModeChange?.(false);
   }, [tabNonce]);
 
-  // ✅ Home → Trade로 넘어올 때 검색어 주입
   useEffect(() => {
     if (typeof initialQuery !== "string") return;
 
     const next = initialQuery;
-    // 동일값이면 setState 불필요
     setQuery((prev) => (prev === next ? prev : next));
   }, [initialQuery]);
 
@@ -197,9 +195,8 @@ export default function TradeScreen({
           (it.location ?? "").includes(q)
         );
       });
-  }, [query, category, tags, location]); // location도 필터링에 쓰면 여기 포함(지금은 검색만)
+  }, [query, category, tags, location]);
 
-  // 상세
   if (selectedItem) {
     return <ItemDetailScreen item={selectedItem} onBack={() => setSelectedItem(null)} />;
   }
@@ -220,7 +217,7 @@ export default function TradeScreen({
                 onChange={(e) => {
                   const v = e.target.value;
                   setQuery(v);
-                  onQueryChange?.(v); // ✅ Home 쪽 상태도 같이 갱신
+                  onQueryChange?.(v);
                 }}
               />
             </div>
@@ -228,13 +225,11 @@ export default function TradeScreen({
             <button
               type="button"
               className="mr-4 flex h-[48px] w-[48px] items-center justify-center rounded-2xl bg-gradient-to-r from-white to-[#D9FFEE]"
-              // 카메라 기능은 나중에
             >
               <Image src="/icons/camera.svg" alt="카메라" width={22} height={20} />
             </button>
           </div>
 
-          {/* 필터 / 위치 칩 */}
           <div className="flex items-center gap-2 px-4">
             {/* 필터 */}
             <button
@@ -311,7 +306,6 @@ export default function TradeScreen({
         </div>
       </div>
 
-      {/* 필터 바텀시트 */}
       {showFilterSheet && (
         <div className="fixed inset-0 z-30 flex items-end bg-black/60" onClick={() => setShowFilterSheet(false)}>
           <div className="w-full rounded-t-3xl bg-white px-6 pb-8 pt-6" onClick={(e) => e.stopPropagation()}>
@@ -377,7 +371,6 @@ export default function TradeScreen({
   );
 }
 
-/* ----------------- 리스트 아이템 ----------------- */
 
 function TradeListItem({ item, onClick }: { item: TradeItemEx; onClick: () => void }) {
   return (

@@ -20,12 +20,10 @@ export default function SplashScreen({ onSkip }: SplashProps) {
           height={99}
         />
 
-        {/* 한 줄짜리 슬로건 + 색/크기 사진1처럼 */}
         <p className="mt-12 text-xl text-[#004D2F]">
           연극·영화 소품 플랫폼
         </p>
 
-        {/* 서비스 이름 크게 */}
         <p className="mt-2.5 text-2xl font-bold text-[#004D2F]">
           리플레이
         </p>

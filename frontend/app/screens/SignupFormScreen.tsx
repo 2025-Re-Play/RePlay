@@ -50,7 +50,6 @@ export default function SignupFormScreen() {
 
   const [adminCode, setAdminCode] = useState("");
 
-  // 입력값(타이핑) / 실제 검색어(0.3초 디바운스)
   const [schoolInput, setSchoolInput] = useState("");
   const [clubInput, setClubInput] = useState("");
   const [schoolKeyword, setSchoolKeyword] = useState("");
@@ -77,7 +76,6 @@ export default function SignupFormScreen() {
   const pwShowError = pwTouched && !pwOk;
 
 
-  // 디바운스: 학교 입력 0.3초 멈추면 keyword 확정
   useEffect(() => {
     const t = setTimeout(() => {
       setSchoolKeyword(schoolInput.trim());
@@ -85,7 +83,6 @@ export default function SignupFormScreen() {
     return () => clearTimeout(t);
   }, [schoolInput]);
 
-  // 디바운스: 동아리 입력 0.3초 멈추면 keyword 확정
   useEffect(() => {
     const t = setTimeout(() => {
       setClubKeyword(clubInput.trim());
@@ -93,7 +90,6 @@ export default function SignupFormScreen() {
     return () => clearTimeout(t);
   }, [clubInput]);
 
-  // 학교 목록
   useEffect(() => {
     let alive = true;
 
@@ -127,7 +123,6 @@ export default function SignupFormScreen() {
     };
   }, [schoolKeyword]);
 
-  // 동아리 목록 (선택한 학교 기준)
   useEffect(() => {
     let alive = true;
 
@@ -245,7 +240,6 @@ export default function SignupFormScreen() {
           onBlur={() => setPwTouched(true)}
         />
 
-        {/* 오른쪽 체크 아이콘 */}
         {pwOk ? (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0EBC81]">
@@ -290,8 +284,6 @@ export default function SignupFormScreen() {
             setSchoolInput(e.target.value);
             setSchoolId(null);
             setSchoolOpen(true);
-
-            // 학교 바꾸면 동아리 초기화
             setClubId(null);
             setClubInput("");
             setClubKeyword("");
@@ -305,7 +297,6 @@ export default function SignupFormScreen() {
 
         {schoolOpen && schoolId === null ? (
           <div className="mt-3 rounded-[12px] bg-[#F7F7F7] px-6 py-5">
-            {/* ✅ 리스트만 스크롤 */}
             <div className="max-h-[240px] overflow-y-auto pr-1">
               <div className="space-y-4">
                 {schoolList.map((s) => (
@@ -315,9 +306,8 @@ export default function SignupFormScreen() {
                     onClick={() => {
                       setSchoolId(s.id);
                       setSchoolInput(s.name);
-                      setSchoolKeyword(s.name); // 선택은 즉시 확정
+                      setSchoolKeyword(s.name);
                       setSchoolOpen(false);
-
                       setClubOpen(true);
                       setClubInput("");
                       setClubKeyword("");
@@ -367,7 +357,6 @@ export default function SignupFormScreen() {
 
         {clubOpen && clubId === null && schoolId !== null ? (
           <div className="mt-3 rounded-[12px] bg-[#F7F7F7] px-6 py-5">
-            {/* ✅ 리스트만 스크롤 */}
             <div className="max-h-[240px] overflow-y-auto pr-1">
               <div className="space-y-4">
                 {clubList.map((c) => (
@@ -377,7 +366,7 @@ export default function SignupFormScreen() {
                     onClick={() => {
                       setClubId(c.id);
                       setClubInput(c.name);
-                      setClubKeyword(c.name); // 선택은 즉시 확정
+                      setClubKeyword(c.name);
                       setClubOpen(false);
                     }}
                     className="block w-full text-left text-[14px] font-medium text-[#4F4F4F]"

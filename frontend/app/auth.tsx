@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { loginApi, signupApi, SignupReq } from "./authApi";
 
 type PendingAction = null | (() => void);
@@ -13,6 +20,8 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   signup: (body: SignupReq) => Promise<void>;
   logout: () => void;
+
+  authHeader: () => Record<string, string>;
 
   requireLogin: (action: () => void) => void;
 
@@ -39,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(
     typeof window === "undefined" ? null : localStorage.getItem("replay_token"),
   );
+
   const isLoggedIn = !!token;
 
   const [authStack, setAuthStack] = useState<AuthScreen[]>(["none"]);
@@ -66,6 +76,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return next.length ? next : ["none"];
     });
   };
+
+  // ✅ 여기서 타입을 확정해버리면 빨간줄 없어짐
+  const authHeader = useCallback((): Record<string, string> => {
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  }, [token]);
 
   const login = async (email: string, password: string) => {
     const t = await loginApi({ email, password });
@@ -126,6 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       signup,
       logout,
+
+      authHeader,
+
       requireLogin,
 
       authScreen,
@@ -142,7 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signupRole,
       setSignupRole,
     }),
-    [token, isLoggedIn, authScreen, needLoginOpen, signupRole],
+    [
+      token,
+      isLoggedIn,
+      authScreen,
+      needLoginOpen,
+      signupRole,
+      authHeader, // ✅ useCallback이라 안전
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

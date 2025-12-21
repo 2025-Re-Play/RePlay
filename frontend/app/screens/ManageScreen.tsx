@@ -14,24 +14,19 @@ type ManageScreenProps = {
 export type ManageItem = {
   id: number;
 
-  // 리스트에 보이는 기본 정보
-  category: string; // 가구/소품/의상/조명 등
+  category: string;
   rentalStatus: "대여중" | "거래완" | "거래가능";
   title: string;
-  school: string; // 위치/학교
+  school: string;
   tags: string[];
-  purchasedAt: string; // 등록 날짜 (예: 2025.03.12)
-  statusText: string; // 상태 텍스트 (예: 양호/보통/사용감 있음)
+  purchasedAt: string;
+  statusText: string;
   needsCheck: boolean;
-
-  // 상세에서 추가로 보일 정보
-  size: string; // 크기/규격
-  description: string; // 상품 설명(상세)
-  price: string; // 판매 가격(원)
-  dailyRentPrice: string; // 일일 대여료(원)
-
-  // 사진(네가 png로 저장해둘 경로)
-  images: string[]; // 예: ["/items/item-1.png"]
+  size: string;
+  description: string;
+  price: string;
+  dailyRentPrice: string; 
+  images: string[];
 };
 
 const categoryOptions = ["가구", "소품", "의상", "조명"];
@@ -54,9 +49,6 @@ const rentalStatusOptions: ManageItem["rentalStatus"][] = ["대여중", "거래�
 
 type ViewMode = "list" | "detail" | "edit";
 
-/** ✅ 더미 데이터 (네가 이미지 파일만 맞춰서 저장하면 바로 보임)
- *  예: public/items/item-1.png ... item-5.png
- */
 const initialItems: ManageItem[] = [
   {
     id: 1,
@@ -159,7 +151,6 @@ export default function ManageScreen({
 
   const [query, setQuery] = useState("");
 
-  // 필터 바텀시트 상태
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [draftCategory, setDraftCategory] = useState<string | null>(null);
   const [draftTags, setDraftTags] = useState<string[]>([]);
@@ -173,16 +164,13 @@ export default function ManageScreen({
 
   const [checkExpanded, setCheckExpanded] = useState(true);
 
-  // 뷰가 리스트가 아닐 때 AppHeader 숨기기
   useEffect(() => {
     if (onDetailModeChange) onDetailModeChange(view !== "list");
   }, [view, onDetailModeChange]);
 
-  // 필터 chip 활성 여부
   const isFilterActive =
     !!categoryFilter || tagFilter.length > 0 || !!rentalStatusFilter;
 
-  // 실제 리스트에 적용되는 필터
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const q = query.trim();
@@ -215,13 +203,11 @@ export default function ManageScreen({
   const checkItems = items.filter((i) => i.needsCheck);
   const checkCount = checkItems.length;
 
-  // 상세 열기
   const openDetail = (item: ManageItem) => {
     setSelectedItem(item);
     setView("detail");
   };
 
-  // 상세에서 뒤로
   const backToList = () => {
     setView("list");
     setSelectedItem(null);
@@ -235,20 +221,17 @@ export default function ManageScreen({
     onDetailModeChange?.(false);
   }, [tabNonce]);
 
-  // 수정 열기
   const openEdit = () => {
     if (!selectedItem) return;
     setEditingItem({ ...selectedItem });
     setView("edit");
   };
 
-  // 수정 취소 → 다시 상세
   const cancelEdit = () => {
     setView("detail");
     setEditingItem(null);
   };
 
-  // 수정 완료
   const saveEdit = () => {
     if (!editingItem) return;
     setItems((prev) =>
@@ -258,7 +241,6 @@ export default function ManageScreen({
     setView("detail");
   };
 
-  // 필터 바텀시트 열기
   const handleFilterButtonClick = () => {
     setDraftCategory(categoryFilter);
     setDraftTags(tagFilter);
@@ -279,7 +261,6 @@ export default function ManageScreen({
     );
   };
 
-  // ---------- 뷰 전환 ----------
 
   if (view === "detail" && selectedItem) {
     return (
@@ -346,7 +327,7 @@ export default function ManageScreen({
             </button>
           </div>
 
-          {/* 점검 필요한 물품들 카드 */}
+          {/* 점검 필요한 물품들 */}
           <section className="mt-2 rounded-[20px] bg-[#F5F5F5] px-6 py-5">
             <button
               type="button"
@@ -494,7 +475,6 @@ export default function ManageScreen({
   );
 }
 
-/* ---------------- 공통: 썸네일(회색 사각형 + 이미지) ---------------- */
 
 function ThumbBox({
   src,
@@ -512,7 +492,6 @@ function ThumbBox({
   );
 }
 
-/* ---------------- 리스트 아이템 ---------------- */
 
 type RowProps = {
   item: ManageItem;
@@ -553,7 +532,6 @@ function ManageItemRow({ item, onClick }: RowProps) {
   );
 }
 
-/* ---------------- 상세 페이지 ---------------- */
 
 type DetailProps = {
   item: ManageItem;
@@ -640,7 +618,6 @@ function ManageItemDetailView({ item, onBack, onEdit }: DetailProps) {
   );
 }
 
-/* ---------------- 수정 페이지 ---------------- */
 
 type EditProps = {
   item: ManageItem;

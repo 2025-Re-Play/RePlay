@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 
 type CommunityScreenProps = {
   onCalendarClick: () => void;
@@ -24,9 +24,6 @@ type Post = {
   commentCount: number;
   hasImage?: boolean;
   liked?: boolean;
-
-  // ✅ 글쓰기에서 선택한 이미지 미리보기(데모용)
-  // 실제 업로드를 붙이면 URL 대신 서버 URL 넣으면 됨
   images?: string[];
 };
 
@@ -40,11 +37,10 @@ type Comment = {
 type PickedImage = {
   id: string;
   file: File;
-  previewUrl: string; // URL.createObjectURL
+  previewUrl: string;
 };
 
 const mockPosts: Post[] = [
-  // ---------------- 일반 게시판 ----------------
   {
     id: 101,
     board: "일반 게시판",
@@ -194,38 +190,25 @@ export default function CommunityScreen({
   tabNonce,
 }: CommunityScreenProps) {
   const [activeBoard, setActiveBoard] = useState<BoardKey>("일반 게시판");
-
-  // 모드: list / detail / write
   const [mode, setMode] = useState<"list" | "detail" | "write">("list");
-
-  // 게시글 데이터
   const [posts, setPosts] = useState<Post[]>(mockPosts);
-
-  // 선택된 게시글
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
-
-  // 검색
   const [query, setQuery] = useState("");
 
-  // 글쓰기 입력값
   const [draftBoard, setDraftBoard] = useState<BoardKey>("일반 게시판");
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
 
-  // ✅ 글쓰기 이미지 상태
   const [draftImages, setDraftImages] = useState<PickedImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ✅ 더미 댓글 데이터
   const [commentsByPost, setCommentsByPost] = useState<Record<number, Comment[]>>({
     101: [
       { id: 1001, author: "cinema_dong", date: "26.03.31", text: "소니 a6400 많이 쓰는 편이에요. 영상 AF 안정적이고 중고도 많아요." },
       { id: 1002, author: "hyun_pd", date: "26.03.31", text: "예산 적으면 캐논 EOS R10도 괜찮아요. 색감 무난해서 후보정 부담 적어요." },
-      { id: 1003, author: "lens_addict", date: "26.03.31", text: "바디보다 렌즈 중요해요. 35mm 단렌즈 하나 있으면 활용도 높습니다." },
     ],
     201: [
       { id: 2001, author: "prop_owner", date: "26.03.31", text: "연세대 동아리방에 소형 원목 식탁 하나 있어요. 대여 가능합니다!" },
-      { id: 2002, author: "stage_helper", date: "26.03.31", text: "대학로 소품 대여처에서도 비슷한 사이즈 봤어요. 링크 필요하시면 드릴게요." },
     ],
   });
 
@@ -244,7 +227,6 @@ export default function CommunityScreen({
       });
   }, [posts, activeBoard, query]);
 
-  // ✅ 상세/글쓰기일 때 AppHeader 숨김
   useEffect(() => {
     onHeaderHiddenChange?.(mode === "detail" || mode === "write");
   }, [mode, onHeaderHiddenChange]);
@@ -253,11 +235,9 @@ export default function CommunityScreen({
     setMode("list");
     setSelectedPostId(null);
 
-    // 글쓰기 입력값도 초기화(원하면 유지해도 됨)
     setDraftTitle("");
     setDraftContent("");
 
-    // 글쓰기 이미지 미리보기 정리
     setDraftImages((prev) => {
       prev.forEach((x) => URL.revokeObjectURL(x.previewUrl));
       return [];
@@ -320,6 +300,7 @@ export default function CommunityScreen({
     setActiveBoard(draftBoard);
     setMode("list");
 
+    // 글 목록에서 계속 보이게 URL 유지하려면 revoke하면 안됨
     setDraftImages([]);
   };
 
@@ -353,13 +334,16 @@ export default function CommunityScreen({
       return { ...prev, [postId]: [newComment, ...arr] };
     });
 
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)));
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p)),
+    );
   };
 
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
 
+  // ✅ 글쓰기 사진 선택
   const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
@@ -377,10 +361,12 @@ export default function CommunityScreen({
       return [...prev, ...next];
     });
 
+    // 같은 파일 다시 선택 가능하게
     e.target.value = "";
   };
 
-  const removeDraftImage = (id: string) => {
+  // ✅ 글쓰기 사진 삭제
+  const onRemoveImage = (id: string) => {
     setDraftImages((prev) => {
       const target = prev.find((x) => x.id === id);
       if (target) URL.revokeObjectURL(target.previewUrl);
@@ -415,7 +401,7 @@ export default function CommunityScreen({
         images={draftImages}
         onOpenFilePicker={openFilePicker}
         onPickFiles={onPickFiles}
-        onRemoveImage={removeDraftImage}
+        onRemoveImage={onRemoveImage}
       />
     );
   }
@@ -434,7 +420,7 @@ export default function CommunityScreen({
           />
         </div>
 
-        {/* 대학 공연 일정 확인 카드 */}
+        {/* 대학 공연 일정 확인 */}
         <button
           type="button"
           onClick={onCalendarClick}
@@ -485,11 +471,9 @@ export default function CommunityScreen({
   );
 }
 
-
 function PostRow({ post, onClick }: { post: Post; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="flex w-full items-center gap-4 text-left">
-
       <div className="flex-1">
         <p className="text-[16px] font-bold text-[#1A1A1A]">{post.title}</p>
         <p className="mt-1 text-[14px] text-[#9E9E9E]">{post.preview}</p>
@@ -510,8 +494,6 @@ function PostRow({ post, onClick }: { post: Post; onClick: () => void }) {
     </button>
   );
 }
-
-/* -------------------- 상세 페이지 -------------------- */
 
 function CommunityDetail({
   post,
@@ -543,12 +525,16 @@ function CommunityDetail({
           <span className="pt-2 text-[14px] font-medium text-[#9E9E9E]">{post.createdAgo}</span>
         </div>
 
-        <p className="mt-6 whitespace-pre-line text-[16px] font-medium text-[#1A1A1A] leading-[1.6]">{post.content}</p>
+        <p className="mt-6 whitespace-pre-line text-[16px] font-medium text-[#1A1A1A] leading-[1.6]">
+          {post.content}
+        </p>
 
-        {/* 이미지 박스(첫 장만) */}
-        <div className="mt-6 relative h-[260px] w-full overflow-hidden rounded-[20px] bg-[#D9D9D9]">
-          {post.images?.[0] ? <Image src={post.images[0]} alt="post" fill className="object-cover" unoptimized /> : null}
-        </div>
+        {/* ✅ 이미지 없으면 아예 안보임 */}
+        {post.images && post.images.length > 0 && post.images[0] ? (
+          <div className="mt-6 relative h-[260px] w-full overflow-hidden rounded-[20px]">
+            <Image src={post.images[0]} alt="post" fill className="object-cover" unoptimized />
+          </div>
+        ) : null}
 
         <div className="mt-6 flex items-center justify-between border-b border-[#F2F2F2] pb-4">
           <button type="button" onClick={onToggleLike} className="flex items-center gap-2 text-[14px]">
@@ -565,7 +551,11 @@ function CommunityDetail({
         <div className="mt-6 space-y-8">
           {comments.map((c) => (
             <div key={c.id} className="flex gap-3">
-              <div className="h-12 w-12 rounded-full bg-[#D9D9D9]" />
+              {/* ✅ 회색 원 -> my.svg */}
+              <div className="relative h-12 w-12 overflow-hidden rounded-full bg-white">
+                <Image src="/icons/my.svg" alt="profile" fill className="object-contain" sizes="48px" />
+              </div>
+
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[14px] font-medium text-[#1A1A1A]">{c.author}</span>
@@ -604,8 +594,6 @@ function CommunityDetail({
   );
 }
 
-/* -------------------- 글 등록 페이지 -------------------- */
-
 function CommunityWrite({
   board,
   title,
@@ -615,7 +603,6 @@ function CommunityWrite({
   onChangeTitle,
   onChangeContent,
   onSubmit,
-
   fileInputRef,
   images,
   onOpenFilePicker,
@@ -645,13 +632,24 @@ function CommunityWrite({
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <button type="button" onClick={onSubmit} className="rounded-[10px] bg-[#E7F8F2] px-4 py-2 text-[14px] font-bold text-[#0EBC81]">
+        <button
+          type="button"
+          onClick={onSubmit}
+          className="rounded-[10px] bg-[#E7F8F2] px-4 py-2 text-[14px] font-bold text-[#0EBC81]"
+        >
           등록
         </button>
       </div>
 
-      {/* ✅ 숨겨진 파일 인풋(필수) */}
-      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
+      {/* ✅ 파일 인풋 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={onPickFiles}
+      />
 
       <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-24 pt-4">
         {/* 게시판 선택 */}
@@ -692,6 +690,29 @@ function CommunityWrite({
               사진 추가
             </button>
           </div>
+
+          {images.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {images.map((img) => (
+                <div
+                  key={img.id}
+                  className="relative h-24 w-24 overflow-hidden rounded-[16px] border border-[#F2F2F2] bg-white"
+                >
+                  {/* objectURL은 next/image가 막는 경우가 있어서 img가 제일 확실 */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.previewUrl} alt="preview" className="h-full w-full object-cover" />
+
+                  <button
+                    type="button"
+                    onClick={() => onRemoveImage(img.id)}
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {/* 내용 */}

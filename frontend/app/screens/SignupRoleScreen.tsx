@@ -14,7 +14,6 @@ export default function SignupRoleScreen() {
 
   return (
     <div className="flex h-full flex-col bg-white px-6 pb-10 pt-16">
-      {/* 뒤로(직전 화면) */}
       <button
         type="button"
         onClick={goBackAuth}
@@ -45,7 +44,6 @@ export default function SignupRoleScreen() {
             />
             </div>
 
-            {/* ✅ 텍스트 영역 높이 고정 */}
             <div className="mt-3 min-h-[48px]">
             <p className="text-center text-[16px] font-medium text-[#1A1A1A]">관리자</p>
             <p className="text-center text-[16px] font-medium text-[#1A1A1A]">(극단장, 극회장 등)</p>
@@ -68,7 +66,6 @@ export default function SignupRoleScreen() {
             />
             </div>
 
-            {/* ✅ 관리자랑 같은 높이를 맞추기 위해 2줄 구조 유지 */}
             <div className="mt-3 min-h-[48px]">
             <p className="text-center text-[16px] font-medium text-[#1A1A1A]">이용자</p>
             <p className="text-center text-[16px] font-medium text-transparent">.</p>
